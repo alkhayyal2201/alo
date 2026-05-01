@@ -224,33 +224,55 @@ function showAuthGate() {
   document.getElementById('auth-gate').classList.remove('hidden');
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  if (window.netlifyIdentity) {
-    window.netlifyIdentity.on('init', user => {
-      if (user) showApp(user);
-      else showAuthGate();
-    });
-    window.netlifyIdentity.on('login', user => {
-      showApp(user);
-      window.netlifyIdentity.close();
-    });
-    window.netlifyIdentity.on('logout', () => showAuthGate());
-    window.netlifyIdentity.init();
-  } else {
-    // Local preview fallback when the widget script isn't loaded
-    showApp({ email: 'isa@local', user_metadata: { full_name: 'Isa' } });
-  }
-
-  document.getElementById('login-btn').addEventListener('click', () => {
-    if (window.netlifyIdentity) window.netlifyIdentity.open('login');
-    else alert('Deploy to Netlify and enable Identity for sign-in to work.');
+function wireIdentity() {
+  if (!window.netlifyIdentity) return false;
+  // Replay-safe: the script-tag widget auto-inits, so a late `on('init')`
+  // listener still fires once the widget has finished bootstrapping.
+  window.netlifyIdentity.on('init', user => {
+    if (user) showApp(user);
+    else showAuthGate();
   });
-  document.getElementById('signup-btn').addEventListener('click', () => {
-    if (window.netlifyIdentity) window.netlifyIdentity.open('signup');
-    else alert('Deploy to Netlify and enable Identity for sign-up to work.');
+  window.netlifyIdentity.on('login', user => {
+    showApp(user);
+    window.netlifyIdentity.close();
+  });
+  window.netlifyIdentity.on('logout', () => showAuthGate());
+
+  const current = window.netlifyIdentity.currentUser();
+  if (current) showApp(current);
+  return true;
+}
+
+function bindAuthButtons() {
+  document.getElementById('login-btn').addEventListener('click', e => {
+    if (window.netlifyIdentity) {
+      e.preventDefault();
+      window.netlifyIdentity.open('login');
+    }
+  });
+  document.getElementById('signup-btn').addEventListener('click', e => {
+    if (window.netlifyIdentity) {
+      e.preventDefault();
+      window.netlifyIdentity.open('signup');
+    }
   });
   document.getElementById('logout-btn').addEventListener('click', () => {
     if (window.netlifyIdentity) window.netlifyIdentity.logout();
     else showAuthGate();
   });
-});
+}
+
+bindAuthButtons();
+
+if (!wireIdentity()) {
+  // Widget script may still be loading — poll briefly, then fall back to local preview.
+  let tries = 0;
+  const id = setInterval(() => {
+    if (wireIdentity() || ++tries > 20) {
+      clearInterval(id);
+      if (!window.netlifyIdentity) {
+        showApp({ email: 'isa@local', user_metadata: { full_name: 'Isa' } });
+      }
+    }
+  }, 100);
+}

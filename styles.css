@@ -53,8 +53,16 @@ body {
   position: fixed; inset: 0;
   background: linear-gradient(135deg, #064e3b 0%, #0d9488 50%, #5eead4 100%);
   display: flex; align-items: center; justify-content: center;
-  z-index: 1000;
+  z-index: 50;
   padding: 20px;
+}
+
+/* Netlify Identity widget injects #netlify-identity-widget at z-index 99 by default;
+   force it above our auth-gate so the modal is visible. */
+#netlify-identity-widget,
+.netlify-identity-widget,
+[id^="netlify-identity"] {
+  z-index: 9999 !important;
 }
 .auth-card {
   background: white;

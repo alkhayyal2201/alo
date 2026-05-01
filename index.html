@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js" defer></script>
+  <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
   <div id="auth-gate" class="auth-gate">
@@ -18,8 +18,8 @@
       </div>
       <h1>Alo Marassi Bahrain</h1>
       <p class="auth-sub">Leave Management Portal</p>
-      <button id="login-btn" class="btn-primary">Sign in</button>
-      <button id="signup-btn" class="btn-secondary">Create account</button>
+      <button id="login-btn" class="btn-primary" data-netlify-identity-button="login">Sign in</button>
+      <button id="signup-btn" class="btn-secondary" data-netlify-identity-button="signup">Create account</button>
       <p class="auth-footer">Secured by Netlify Identity</p>
     </div>
   </div>
