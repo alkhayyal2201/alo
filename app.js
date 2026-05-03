@@ -15,7 +15,7 @@ function renderCalendar() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Padding for start of month
+  // Padding for empty days at start of month
   for (let i = 0; i < firstDay; i++) {
     const empty = document.createElement('div');
     empty.className = 'calendar-day empty';
@@ -28,12 +28,14 @@ function renderCalendar() {
     dayBox.className = 'calendar-day';
     dayBox.innerHTML = `<span class="day-num">${d}</span>`;
     
+    // Filter and show leaves for this day
     const dayLeaves = allLeaves.filter(l => l.day === d && l.month === month);
     dayLeaves.forEach(leave => {
       const chip = document.createElement('div');
       chip.className = `leave-chip chip-${leave.status}`;
       chip.innerHTML = `<strong>${leave.name}</strong> <span class="status-label">${leave.status}</span>`;
       
+      // If manager is logged in, allow them to click to approve/reject
       if (currentUser) {
         chip.classList.add('manager-view');
         chip.onclick = (e) => {
@@ -85,14 +87,22 @@ function handleManagerAction(leaveId) {
   renderCalendar();
 }
 
-// Auth Logic
+// Netlify Identity Handlers
 function updateUI(user) {
   currentUser = user;
-  document.getElementById('manager-info').classList.toggle('hidden', !user);
-  document.getElementById('login-btn').classList.toggle('hidden', !!user);
-  document.getElementById('logout-btn').classList.toggle('hidden', !user);
+  const managerInfo = document.getElementById('manager-info');
+  const loginBtn = document.getElementById('login-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+
   if (user) {
+    managerInfo.classList.remove('hidden');
+    loginBtn.classList.add('hidden');
+    logoutBtn.classList.remove('hidden');
     document.getElementById('user-name').textContent = user.user_metadata?.full_name || "Manager";
+  } else {
+    managerInfo.classList.add('hidden');
+    loginBtn.classList.remove('hidden');
+    logoutBtn.classList.add('hidden');
   }
   renderCalendar();
 }
