@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Alo Marassi Bahrain — Leave Management</title>
+  <title>Alo Marassi Bahrain — Leave Calendar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -15,104 +15,63 @@
     <header class="topbar">
       <div class="brand">
         <div class="brand-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </div>
         <div class="brand-text">
           <strong>Alo Marassi Bahrain</strong>
-          <span>LEAVE MANAGEMENT</span>
+          <span id="current-month-display">January 2026</span>
         </div>
-        <span class="year-badge">2026</span>
       </div>
 
       <div class="user-area">
         <div id="manager-info" class="hidden">
-          <span class="user-label">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg>
-            Manager:
-          </span>
-          <div class="user-pill">
-            <span id="user-name">—</span>
-          </div>
+          <span class="user-label">Manager:</span>
+          <div class="user-pill"><span id="user-name">Admin</span></div>
         </div>
-        
         <button id="login-btn" class="btn-primary auth-btn">Manager Sign-in</button>
-        
         <button id="logout-btn" class="icon-btn hidden" title="Sign out">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
     </header>
 
-    <section class="kpis">
-      <div class="kpi">
-        <div class="kpi-icon kpi-pending">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+    <div class="calendar-container">
+      <div class="calendar-header-days">
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+      </div>
+      <div id="calendar-grid" class="calendar-grid">
         </div>
-        <span class="kpi-badge kpi-badge-pending" data-kpi="pending">0</span>
-        <div class="kpi-value" data-kpi-value="pending">0</div>
-        <div class="kpi-label">Pending Requests</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-icon kpi-approved">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <span class="kpi-badge kpi-badge-approved" data-kpi="approved">0</span>
-        <div class="kpi-value" data-kpi-value="approved">0</div>
-        <div class="kpi-label">Approved</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-icon kpi-rejected">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </div>
-        <div class="kpi-value" data-kpi-value="rejected">0</div>
-        <div class="kpi-label">Rejected</div>
-      </div>
-    </section>
-
-    <section class="filterbar">
-      <div class="filter-left">
-        <span class="filter-label">FILTER:</span>
-        <select id="status-filter">
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
-      </div>
-      <div class="legend">
-        <span class="legend-item"><span class="dot dot-pending"></span>Pending</span>
-        <span class="legend-item"><span class="dot dot-approved"></span>Approved</span>
-        <span class="legend-item"><span class="dot dot-rejected"></span>Rejected</span>
-        <span class="legend-item"><span class="dot dot-reschedule"></span>Reschedule</span>
-        <button id="reset-btn" class="reset-btn">↻ Reset</button>
-      </div>
-    </section>
-
-    <section class="grid-wrap">
-      <table class="leave-grid">
-        <thead>
-          <tr>
-            <th class="col-name">NAME</th>
-            <th>JAN</th><th>FEB</th><th>MAR</th><th>APR</th>
-            <th>MAY</th><th>JUN</th><th>JUL</th><th>AUG</th>
-            <th>SEP</th><th>OCT</th><th>NOV</th><th>DEC</th>
-          </tr>
-        </thead>
-        <tbody id="grid-body"></tbody>
-      </table>
-    </section>
+    </div>
   </main>
 
   <div id="leave-modal" class="modal hidden">
     <div class="modal-card">
       <h3>Request Leave</h3>
-      <p id="leave-modal-month" class="modal-month"></p>
-      <label>Start date<input type="date" id="leave-start" /></label>
-      <label>End date<input type="date" id="leave-end" /></label>
-      <label>Notes<textarea id="leave-notes" rows="3" placeholder="Optional"></textarea></label>
+      <p id="selected-date-label" class="modal-sub"></p>
+      <input type="hidden" id="submit-day">
+      
+      <label for="request-name">Employee Name</label>
+      <select id="request-name">
+        <option value="">Select your name...</option>
+        <option value="Amen">Amen</option>
+        <option value="Ousama">Ousama</option>
+        <option value="Ali">Ali</option>
+        <option value="Hardeep">Hardeep</option>
+        <option value="Ariel">Ariel</option>
+        <option value="Jojo">Jojo</option>
+        <option value="Maryam">Maryam</option>
+        <option value="Brenda">Brenda</option>
+        <option value="Rhea">Rhea</option>
+        <option value="Najwa">Najwa</option>
+        <option value="Roaa">Roaa</option>
+        <option value="Mochi">Mochi</option>
+        <option value="Arth">Arth</option>
+        <option value="Isa">Isa</option>
+      </select>
+
       <div class="modal-actions">
         <button id="leave-cancel" class="btn-secondary">Cancel</button>
-        <button id="leave-submit" class="btn-primary">Submit</button>
+        <button id="leave-submit" class="btn-primary">Submit Request</button>
       </div>
     </div>
   </div>
