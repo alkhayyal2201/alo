@@ -124,16 +124,35 @@ async function loadData() {
   const remote = await apiGet();
   if (remote && remote.employees) {
     store = remote;
+    migrateLeaves();
     saveLocal();
     return;
   }
   const local = loadLocal();
   if (local && local.employees) {
     store = local;
+    migrateLeaves();
+    saveLocal();
     return;
   }
   store = { employees: JSON.parse(JSON.stringify(SEED_EMPLOYEES)) };
   saveLocal();
+}
+
+function migrateLeaves() {
+  let dirty = false;
+  store.employees.forEach(emp => {
+    emp.leaves.forEach(leave => {
+      if (leave.startDate && leave.endDate) return;
+      const nums = (leave.dates || '').match(/\d+/g);
+      if (nums && leave.month != null) {
+        if (!leave.startDate) leave.startDate = isoDate(YEAR, leave.month, parseInt(nums[0]));
+        if (!leave.endDate) leave.endDate = isoDate(YEAR, leave.month, parseInt(nums[nums.length - 1]));
+        dirty = true;
+      }
+    });
+  });
+  if (dirty) saveLocal();
 }
 
 async function mutate(action, extra) {
@@ -345,7 +364,8 @@ function renderCalendar() {
     }
     for (const l of leaves) {
       if (shown >= maxShow) break;
-      html += `<div class="cal-leave cal-${l.status}">${l.empName}</div>`;
+      const icon = l.status === 'approved' ? '\u2713' : l.status === 'rejected' ? '\u2717' : '\u25CF';
+      html += `<div class="cal-leave cal-${l.status}"><span class="cal-status-dot"></span>${l.empName}</div>`;
       shown++;
     }
     const total = leaves.length + evts.length + blks.length;
@@ -411,21 +431,19 @@ function openDayDetail(day) {
   });
   leaves.forEach(l => {
     const statusLabel = l.status[0].toUpperCase() + l.status.slice(1);
+    const statusIcon = l.status === 'approved' ? '\u2713 Approved' : l.status === 'rejected' ? '\u2717 Rejected' : '\u25CF Pending';
     html += `<div class="day-detail-entry dde-${l.status}">
       <div class="dde-avatar">${l.empName[0]}</div>
       <div class="dde-info">
         <div class="dde-name">${l.empName}</div>
-        <div class="dde-status">${statusLabel} &middot; ${l.dates} (${l.days}d)</div>
+        <div class="dde-status">${statusIcon} &middot; ${l.dates} (${l.days}d)</div>
       </div>
     </div>`;
   });
 
   body.innerHTML = html;
 
-  if (reqBtn) {
-    if (isManager()) reqBtn.classList.remove('hidden');
-    else reqBtn.classList.add('hidden');
-  }
+  if (reqBtn) reqBtn.classList.remove('hidden');
 
   el.classList.remove('hidden');
 }

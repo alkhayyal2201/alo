@@ -259,13 +259,21 @@ body {
   font-size: 10px; padding: 2px 5px; border-radius: 4px;
   margin-bottom: 2px; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; font-weight: 500; line-height: 1.4;
-  max-width: 100%;
+  max-width: 100%; display: flex; align-items: center; gap: 3px;
+}
+.cal-status-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
 }
 .cal-leave.cal-pending  { background: var(--pending-bg);  color: var(--pending-fg); }
+.cal-leave.cal-pending .cal-status-dot  { background: var(--pending-dot); }
 .cal-leave.cal-approved { background: var(--approved-bg); color: var(--approved-fg); }
+.cal-leave.cal-approved .cal-status-dot { background: var(--approved-dot); }
 .cal-leave.cal-rejected { background: var(--rejected-bg); color: var(--rejected-fg); }
+.cal-leave.cal-rejected .cal-status-dot { background: var(--rejected-dot); }
 .cal-leave.cal-blockout { background: var(--blockout-row); color: var(--blockout-fg); }
+.cal-leave.cal-blockout .cal-status-dot { background: var(--blockout-fg); }
 .cal-leave.cal-event    { background: var(--events-row);  color: var(--events-fg); }
+.cal-leave.cal-event .cal-status-dot    { background: var(--events-fg); }
 
 .cal-more {
   font-size: 9px; color: var(--gray-500); font-weight: 600;
