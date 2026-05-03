@@ -127,6 +127,7 @@ body {
 
 .user-area { display: flex; align-items: center; gap: 10px; }
 .user-label { display: inline-flex; align-items: center; gap: 5px; color: var(--gray-500); font-size: 13px; font-weight: 500; }
+.viewer-label { color: var(--gray-400); font-size: 12px; font-style: italic; }
 .role-badge {
   display: inline-block; padding: 3px 10px; border-radius: 6px;
   font-size: 10px; font-weight: 700; letter-spacing: 0.04em;

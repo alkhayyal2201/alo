@@ -70,18 +70,16 @@ const SEED_EMPLOYEES = [
   ]},
 ];
 
-const MANAGERS = ['Isa'];
 const LOCAL_KEY = 'alo_leave_store';
 const API_URL = '/api/leaves';
 
 let store = { employees: [] };
-let currentUser = 'Isa';
-let statusFilter = 'all';
+let currentUser = null;
 let activeTab = 'calendar';
 let calMonth = new Date().getMonth();
 let dayModalDate = null;
 
-function isManager() { return MANAGERS.includes(currentUser); }
+function isManager() { return currentUser !== null; }
 
 // ============================================================
 // API layer
@@ -162,7 +160,7 @@ function applyLocalMutation(action, extra) {
       const emp = store.employees.find(e => e.name === extra.employee);
       if (emp && emp.leaves[extra.index]) {
         emp.leaves[extra.index].status = 'approved';
-        emp.leaves[extra.index].approvedBy = extra.approver;
+        emp.leaves[extra.index].approvedBy = currentUser;
         emp.leaves[extra.index].approvedAt = new Date().toISOString();
       }
       break;
@@ -171,7 +169,7 @@ function applyLocalMutation(action, extra) {
       const emp = store.employees.find(e => e.name === extra.employee);
       if (emp && emp.leaves[extra.index]) {
         emp.leaves[extra.index].status = 'rejected';
-        emp.leaves[extra.index].rejectedBy = extra.rejecter;
+        emp.leaves[extra.index].rejectedBy = currentUser;
         emp.leaves[extra.index].rejectedAt = new Date().toISOString();
       }
       break;
@@ -191,10 +189,6 @@ function applyLocalMutation(action, extra) {
 // ============================================================
 // Helpers
 // ============================================================
-function dateRangeOverlaps(s1, e1, s2, e2) {
-  return s1 <= e2 && s2 <= e1;
-}
-
 function getLeavesForDay(y, m, d) {
   const target = new Date(y, m, d);
   const results = [];
@@ -233,6 +227,38 @@ function getBlockoutsForDay(y, m, d) {
 
 function isoDate(y, m, d) {
   return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+// ============================================================
+// UI state
+// ============================================================
+function updateAuthUI() {
+  const viewerEl = document.getElementById('auth-viewer');
+  const userEl = document.getElementById('auth-user');
+  const roleEl = document.getElementById('user-role');
+  const loginBtn = document.getElementById('manager-login-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+  const tabMyLeaves = document.getElementById('tab-my-leaves-btn');
+  const tabApprovals = document.getElementById('tab-approvals-btn');
+
+  if (isManager()) {
+    if (viewerEl) viewerEl.classList.add('hidden');
+    if (userEl) userEl.classList.remove('hidden');
+    if (roleEl) roleEl.classList.remove('hidden');
+    if (loginBtn) loginBtn.classList.add('hidden');
+    if (logoutBtn) logoutBtn.classList.remove('hidden');
+    if (tabMyLeaves) tabMyLeaves.classList.remove('hidden');
+    if (tabApprovals) tabApprovals.classList.remove('hidden');
+  } else {
+    if (viewerEl) viewerEl.classList.remove('hidden');
+    if (userEl) userEl.classList.add('hidden');
+    if (roleEl) roleEl.classList.add('hidden');
+    if (loginBtn) loginBtn.classList.remove('hidden');
+    if (logoutBtn) logoutBtn.classList.add('hidden');
+    if (tabMyLeaves) tabMyLeaves.classList.add('hidden');
+    if (tabApprovals) tabApprovals.classList.add('hidden');
+    if (activeTab !== 'calendar') switchTab('calendar');
+  }
 }
 
 // ============================================================
@@ -279,7 +305,6 @@ function renderCalendar() {
   const firstDow = new Date(YEAR, calMonth, 1).getDay();
   const today = new Date();
   const isThisMonth = today.getFullYear() === YEAR && today.getMonth() === calMonth;
-
   const prevMonthDays = new Date(YEAR, calMonth, 0).getDate();
   const maxShow = 3;
 
@@ -352,6 +377,7 @@ function openDayDetail(day) {
   const el = document.getElementById('day-modal');
   const title = document.getElementById('day-modal-title');
   const body = document.getElementById('day-modal-body');
+  const reqBtn = document.getElementById('day-modal-request');
 
   title.textContent = `${MONTHS_SHORT[calMonth]} ${day}, ${YEAR}`;
 
@@ -395,6 +421,12 @@ function openDayDetail(day) {
   });
 
   body.innerHTML = html;
+
+  if (reqBtn) {
+    if (isManager()) reqBtn.classList.remove('hidden');
+    else reqBtn.classList.add('hidden');
+  }
+
   el.classList.remove('hidden');
 }
 
@@ -424,78 +456,20 @@ document.getElementById('cal-today-btn').addEventListener('click', () => {
 });
 
 // ============================================================
-// Overview tab (year grid)
-// ============================================================
-function buildEventRow() {
-  const cells = ['<td class="col-name">Events</td>'];
-  for (let m = 0; m < 12; m++) {
-    const ev = calendarEvents.find(e => e.month === m);
-    cells.push(ev ? `<td class="event-cell">${ev.label}</td>` : '<td></td>');
-  }
-  return `<tr class="row-events">${cells.join('')}</tr>`;
-}
-
-function buildBlockoutRow() {
-  const cells = ['<td class="col-name">Blockout</td>'];
-  for (let m = 0; m < 12; m++) {
-    const b = blockouts.find(x => x.month === m);
-    cells.push(b ? `<td class="blockout-cell">${b.label}</td>` : '<td></td>');
-  }
-  return `<tr class="row-blockout">${cells.join('')}</tr>`;
-}
-
-function buildEmployeeRow(emp) {
-  const cells = [`<td class="col-name">${emp.name}</td>`];
-  for (let m = 0; m < 12; m++) {
-    const leave = emp.leaves.find(l => l.month === m);
-    const show = leave && (statusFilter === 'all' || leave.status === statusFilter);
-    if (show) {
-      const label = leave.status[0].toUpperCase() + leave.status.slice(1);
-      cells.push(
-        `<td><div class="chip chip-${leave.status}">` +
-          `<span class="chip-status">${label}</span>` +
-          `<span>${leave.dates} (${leave.days}d)</span>` +
-        `</div></td>`
-      );
-    } else if (emp.name === currentUser && !leave) {
-      cells.push(`<td><button class="request-btn" data-month="${m}">+ Request</button></td>`);
-    } else {
-      cells.push('<td></td>');
-    }
-  }
-  return `<tr>${cells.join('')}</tr>`;
-}
-
-function renderOverview() {
-  const tbody = document.getElementById('grid-body');
-  if (!tbody) return;
-  tbody.innerHTML =
-    buildEventRow() +
-    buildBlockoutRow() +
-    store.employees.map(buildEmployeeRow).join('');
-  tbody.querySelectorAll('.request-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const m = parseInt(btn.dataset.month, 10);
-      openLeaveModal(m);
-    });
-  });
-}
-
-// ============================================================
 // My Leaves tab
 // ============================================================
 function renderMyLeaves() {
   const el = document.getElementById('my-leaves-list');
-  if (!el) return;
+  if (!el || !currentUser) return;
   const me = store.employees.find(e => e.name === currentUser);
   if (!me || !me.leaves.length) {
-    el.innerHTML = '<div class="empty-state"><p>No leave requests yet.</p><p class="empty-sub">Use the Calendar or Overview tab to submit a new request.</p></div>';
+    el.innerHTML = '<div class="empty-state"><p>No leave requests for your account.</p><p class="empty-sub">Use the Calendar tab to submit a new request.</p></div>';
     return;
   }
   el.innerHTML = me.leaves
     .slice()
     .sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''))
-    .map((l, _si) => {
+    .map((l) => {
       const origI = me.leaves.indexOf(l);
       return `<div class="leave-card card-${l.status}">
         <div class="leave-card-row">
@@ -504,13 +478,13 @@ function renderMyLeaves() {
         </div>
         <div class="leave-card-dates">${l.dates} &middot; ${l.days} day${l.days !== 1 ? 's' : ''}</div>
         ${l.notes ? `<div class="leave-card-notes">${l.notes}</div>` : ''}
-        ${l.status === 'pending' ? `<button class="btn-sm btn-danger cancel-leave" data-idx="${origI}" style="margin-top:10px;">Cancel Request</button>` : ''}
+        ${l.status === 'pending' ? `<button class="btn-sm btn-danger cancel-leave" data-emp="${me.name}" data-idx="${origI}" style="margin-top:10px;">Cancel Request</button>` : ''}
       </div>`;
     }).join('');
 
   el.querySelectorAll('.cancel-leave').forEach(btn => {
     btn.addEventListener('click', async () => {
-      await mutate('cancel', { employee: currentUser, index: parseInt(btn.dataset.idx, 10) });
+      await mutate('cancel', { employee: btn.dataset.emp, index: parseInt(btn.dataset.idx, 10) });
       render();
     });
   });
@@ -521,11 +495,8 @@ function renderMyLeaves() {
 // ============================================================
 function renderApprovals() {
   const el = document.getElementById('approvals-list');
-  if (!el) return;
-  if (!isManager()) {
-    el.innerHTML = '<div class="empty-state"><p>Restricted to managers.</p></div>';
-    return;
-  }
+  if (!el || !isManager()) return;
+
   const pending = [];
   store.employees.forEach(emp => {
     emp.leaves.forEach((l, i) => {
@@ -564,7 +535,6 @@ function renderApprovals() {
       await mutate('approve', {
         employee: btn.dataset.emp,
         index: parseInt(btn.dataset.idx, 10),
-        approver: currentUser,
       });
       render();
     });
@@ -574,7 +544,6 @@ function renderApprovals() {
       await mutate('reject', {
         employee: btn.dataset.emp,
         index: parseInt(btn.dataset.idx, 10),
-        rejecter: currentUser,
       });
       render();
     });
@@ -589,11 +558,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('hidden', s.id !== `tab-${tab}`));
 
-  const tabAppBtn = document.querySelector('[data-tab="approvals"]');
-  if (tabAppBtn) tabAppBtn.style.display = isManager() ? '' : 'none';
-
   if (tab === 'calendar') renderCalendar();
-  else if (tab === 'overview') renderOverview();
   else if (tab === 'my-leaves') renderMyLeaves();
   else if (tab === 'approvals') renderApprovals();
 }
@@ -603,26 +568,21 @@ document.querySelectorAll('.tab').forEach(t => {
 });
 
 // ============================================================
-// Filter (Overview)
-// ============================================================
-document.getElementById('status-filter').addEventListener('change', e => {
-  statusFilter = e.target.value;
-  renderOverview();
-});
-document.getElementById('reset-btn').addEventListener('click', () => {
-  document.getElementById('status-filter').value = 'all';
-  statusFilter = 'all';
-  renderOverview();
-});
-
-// ============================================================
 // Leave request modal
 // ============================================================
 let modalMonth = null;
 
+function populateEmployeeSelect() {
+  const sel = document.getElementById('leave-employee');
+  if (!sel) return;
+  sel.innerHTML = store.employees.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+  if (currentUser) sel.value = currentUser;
+}
+
 function openLeaveModal(month, prefillStart) {
   modalMonth = month;
   document.getElementById('leave-modal-month').textContent = `For ${MONTHS[month]} ${YEAR}`;
+  populateEmployeeSelect();
   if (prefillStart) document.getElementById('leave-start').value = prefillStart;
   else document.getElementById('leave-start').value = isoDate(YEAR, month, 1);
   document.getElementById('leave-end').value = '';
@@ -637,6 +597,7 @@ function closeLeaveModal() {
 document.getElementById('leave-cancel').addEventListener('click', closeLeaveModal);
 
 document.getElementById('leave-submit').addEventListener('click', async () => {
+  const empName = document.getElementById('leave-employee').value;
   const start = document.getElementById('leave-start').value;
   const end   = document.getElementById('leave-end').value;
   const notes = document.getElementById('leave-notes').value;
@@ -656,7 +617,7 @@ document.getElementById('leave-submit').addEventListener('click', async () => {
     endDate: end,
     notes: notes || undefined,
   };
-  await mutate('submit', { employee: currentUser, leave: leaveObj });
+  await mutate('submit', { employee: empName, leave: leaveObj });
   closeLeaveModal();
   render();
 });
@@ -665,90 +626,68 @@ document.getElementById('leave-submit').addEventListener('click', async () => {
 // Render orchestrator
 // ============================================================
 function render() {
+  updateAuthUI();
   updateKPIs();
   if (activeTab === 'calendar') renderCalendar();
-  else if (activeTab === 'overview') renderOverview();
   else if (activeTab === 'my-leaves') renderMyLeaves();
   else if (activeTab === 'approvals') renderApprovals();
-
-  const tabAppBtn = document.querySelector('[data-tab="approvals"]');
-  if (tabAppBtn) tabAppBtn.style.display = isManager() ? '' : 'none';
 }
 
 // ============================================================
-// Netlify Identity
+// Auth (Netlify Identity — voluntary manager sign-in)
 // ============================================================
-function showApp(user) {
-  document.getElementById('auth-gate').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
+function onSignIn(user) {
   const display = (user.user_metadata && user.user_metadata.full_name) || user.email.split('@')[0];
   const firstName = display.split(' ')[0];
-  document.getElementById('user-name').textContent = firstName;
-
-  const roleEl = document.getElementById('user-role');
-  if (roleEl) {
-    const match = SEED_EMPLOYEES.find(e => e.name.toLowerCase() === firstName.toLowerCase());
-    currentUser = match ? match.name : firstName;
-    if (MANAGERS.includes(currentUser)) {
-      roleEl.textContent = 'Manager';
-      roleEl.className = 'role-badge role-manager';
-    } else {
-      roleEl.textContent = 'Employee';
-      roleEl.className = 'role-badge role-employee';
-    }
-  }
-
+  const match = store.employees.find(e => e.name.toLowerCase() === firstName.toLowerCase());
+  currentUser = match ? match.name : firstName;
+  document.getElementById('user-name').textContent = currentUser;
   render();
 }
 
-function showAuthGate() {
-  document.getElementById('app').classList.add('hidden');
-  document.getElementById('auth-gate').classList.remove('hidden');
+function onSignOut() {
+  currentUser = null;
+  render();
 }
 
 function wireIdentity() {
   if (!window.netlifyIdentity) return false;
+
   window.netlifyIdentity.on('init', user => {
-    if (user) showApp(user); else showAuthGate();
+    if (user) onSignIn(user);
   });
   window.netlifyIdentity.on('login', user => {
-    showApp(user);
+    onSignIn(user);
     window.netlifyIdentity.close();
   });
-  window.netlifyIdentity.on('logout', () => showAuthGate());
+  window.netlifyIdentity.on('logout', () => onSignOut());
+
   const current = window.netlifyIdentity.currentUser();
-  if (current) showApp(current);
+  if (current) { onSignIn(current); return true; }
   return true;
 }
 
-function bindAuthButtons() {
-  document.getElementById('login-btn').addEventListener('click', e => {
-    if (window.netlifyIdentity) { e.preventDefault(); window.netlifyIdentity.open('login'); }
-  });
-  document.getElementById('signup-btn').addEventListener('click', e => {
-    if (window.netlifyIdentity) { e.preventDefault(); window.netlifyIdentity.open('signup'); }
-  });
-  document.getElementById('logout-btn').addEventListener('click', () => {
-    if (window.netlifyIdentity) window.netlifyIdentity.logout(); else showAuthGate();
-  });
-}
+document.getElementById('manager-login-btn').addEventListener('click', () => {
+  if (window.netlifyIdentity) window.netlifyIdentity.open('login');
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  if (window.netlifyIdentity) window.netlifyIdentity.logout();
+  else onSignOut();
+});
 
 // ============================================================
-// Init
+// Init — app visible immediately, no auth gate
 // ============================================================
-bindAuthButtons();
-
 (async () => {
   await loadData();
+
   if (!wireIdentity()) {
     let tries = 0;
     const id = setInterval(() => {
-      if (wireIdentity() || ++tries > 20) {
-        clearInterval(id);
-        if (!window.netlifyIdentity) {
-          showApp({ email: 'isa@local', user_metadata: { full_name: 'Isa' } });
-        }
-      }
+      if (wireIdentity() || ++tries > 20) clearInterval(id);
     }, 100);
   }
+
+  render();
 })();
