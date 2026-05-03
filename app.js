@@ -1,6 +1,3 @@
-// ============================================================
-// Static data — month is 0-indexed (0 = Jan, 11 = Dec)
-// ============================================================
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const events = [
@@ -71,12 +68,9 @@ const employees = [
   ]},
 ];
 
-let currentUser = 'Isa';
+let currentUser = null; // Default to guest
 let statusFilter = 'all';
 
-// ============================================================
-// Render
-// ============================================================
 function buildEventRow() {
   const cells = ['<td class="col-name">Events</td>'];
   for (let m = 0; m < 12; m++) {
@@ -109,7 +103,7 @@ function buildEmployeeRow(emp) {
           `<span>${leave.dates} (${leave.days}d)</span>` +
         `</div></td>`
       );
-    } else if (emp.name === currentUser && !leave) {
+    } else if (currentUser && emp.name === currentUser && !leave) {
       cells.push(`<td><button class="request-btn" data-month="${m}">+ Request leave</button></td>`);
     } else {
       cells.push('<td></td>');
@@ -144,11 +138,7 @@ function updateKPIs() {
   document.querySelector('[data-kpi="approved"]').textContent = counts.approved;
 }
 
-// ============================================================
-// Modal — request a new leave
-// ============================================================
 let modalMonth = null;
-
 function openLeaveModal(month) {
   modalMonth = month;
   document.getElementById('leave-modal-month').textContent = `For ${MONTHS[month]} 2026`;
@@ -167,16 +157,12 @@ document.getElementById('leave-cancel').addEventListener('click', closeLeaveModa
 document.getElementById('leave-submit').addEventListener('click', () => {
   const start = document.getElementById('leave-start').value;
   const end   = document.getElementById('leave-end').value;
-  if (!start || !end) {
-    alert('Please pick start and end dates.');
-    return;
-  }
+  if (!start || !end) return alert('Please pick start and end dates.');
+  
   const startD = new Date(start);
   const endD   = new Date(end);
-  if (endD < startD) {
-    alert('End date must be after start date.');
-    return;
-  }
+  if (endD < startD) return alert('End date must be after start date.');
+  
   const days = Math.round((endD - startD) / 86400000) + 1;
   const fmt  = d => `${d.getDate()} ${MONTHS[d.getMonth()]}`;
   const dates = startD.getTime() === endD.getTime() ? fmt(startD) : `${fmt(startD)} - ${fmt(endD)}`;
@@ -189,9 +175,6 @@ document.getElementById('leave-submit').addEventListener('click', () => {
   closeLeaveModal();
 });
 
-// ============================================================
-// Filter + reset
-// ============================================================
 document.getElementById('status-filter').addEventListener('change', e => {
   statusFilter = e.target.value;
   render();
@@ -204,75 +187,61 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 });
 
 // ============================================================
-// Netlify Identity
+// Auth logic
 // ============================================================
 function showApp(user) {
-  document.getElementById('auth-gate').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
+  const loginBtn = document.getElementById('login-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+  const managerInfo = document.getElementById('manager-info');
 
-  const display = (user.user_metadata && user.user_metadata.full_name) || user.email.split('@')[0];
-  const firstName = display.split(' ')[0];
-  document.getElementById('user-name').textContent = firstName;
+  if (user) {
+    loginBtn.classList.add('hidden');
+    logoutBtn.classList.remove('hidden');
+    managerInfo.classList.remove('hidden');
 
-  const match = employees.find(e => e.name.toLowerCase() === firstName.toLowerCase());
-  currentUser = match ? match.name : 'Isa';
+    const display = (user.user_metadata && user.user_metadata.full_name) || user.email.split('@')[0];
+    const firstName = display.split(' ')[0];
+    document.getElementById('user-name').textContent = firstName;
+
+    const match = employees.find(e => e.name.toLowerCase() === firstName.toLowerCase());
+    currentUser = match ? match.name : 'Isa';
+  } else {
+    loginBtn.classList.remove('hidden');
+    logoutBtn.classList.add('hidden');
+    managerInfo.classList.add('hidden');
+    currentUser = null;
+  }
   render();
-}
-
-function showAuthGate() {
-  document.getElementById('app').classList.add('hidden');
-  document.getElementById('auth-gate').classList.remove('hidden');
 }
 
 function wireIdentity() {
   if (!window.netlifyIdentity) return false;
-  // Replay-safe: the script-tag widget auto-inits, so a late `on('init')`
-  // listener still fires once the widget has finished bootstrapping.
-  window.netlifyIdentity.on('init', user => {
-    if (user) showApp(user);
-    else showAuthGate();
-  });
+  window.netlifyIdentity.on('init', user => showApp(user));
   window.netlifyIdentity.on('login', user => {
     showApp(user);
     window.netlifyIdentity.close();
   });
-  window.netlifyIdentity.on('logout', () => showAuthGate());
-
+  window.netlifyIdentity.on('logout', () => showApp(null));
+  
   const current = window.netlifyIdentity.currentUser();
   if (current) showApp(current);
   return true;
 }
 
-function bindAuthButtons() {
-  document.getElementById('login-btn').addEventListener('click', e => {
-    if (window.netlifyIdentity) {
-      e.preventDefault();
-      window.netlifyIdentity.open('login');
-    }
-  });
-  document.getElementById('signup-btn').addEventListener('click', e => {
-    if (window.netlifyIdentity) {
-      e.preventDefault();
-      window.netlifyIdentity.open('signup');
-    }
-  });
-  document.getElementById('logout-btn').addEventListener('click', () => {
-    if (window.netlifyIdentity) window.netlifyIdentity.logout();
-    else showAuthGate();
-  });
-}
+document.getElementById('login-btn').addEventListener('click', () => {
+  if (window.netlifyIdentity) window.netlifyIdentity.open('login');
+});
 
-bindAuthButtons();
+document.getElementById('logout-btn').addEventListener('click', () => {
+  if (window.netlifyIdentity) window.netlifyIdentity.logout();
+});
+
+// Initial load
+render();
 
 if (!wireIdentity()) {
-  // Widget script may still be loading — poll briefly, then fall back to local preview.
   let tries = 0;
   const id = setInterval(() => {
-    if (wireIdentity() || ++tries > 20) {
-      clearInterval(id);
-      if (!window.netlifyIdentity) {
-        showApp({ email: 'isa@local', user_metadata: { full_name: 'Isa' } });
-      }
-    }
+    if (wireIdentity() || ++tries > 20) clearInterval(id);
   }, 100);
 }
