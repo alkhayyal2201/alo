@@ -75,7 +75,7 @@ export default async (req) => {
       data = JSON.parse(JSON.stringify(SEED));
       await store.setJSON(KEY, data);
     }
-    return json({ employees: data, _ts: Date.now() });
+    return json({ employees: data });
   }
 
   if (req.method === 'POST') {
@@ -100,7 +100,9 @@ export default async (req) => {
             by: body.approver || 'manager',
             at: new Date().toISOString(),
           });
-          emp.leaves[body.index].status = 'pending';
+          emp.leaves[body.index].status = 'approved';
+          emp.leaves[body.index].approvedBy = body.approver;
+          emp.leaves[body.index].approvedAt = new Date().toISOString();
         }
         break;
       }
@@ -113,7 +115,9 @@ export default async (req) => {
             by: body.rejecter || 'manager',
             at: new Date().toISOString(),
           });
-          emp.leaves[body.index].status = 'pending';
+          emp.leaves[body.index].status = 'rejected';
+          emp.leaves[body.index].rejectedBy = body.rejecter;
+          emp.leaves[body.index].rejectedAt = new Date().toISOString();
         }
         break;
       }
@@ -131,7 +135,7 @@ export default async (req) => {
     }
 
     await store.setJSON(KEY, data);
-    return json({ ok: true, employees: data, _ts: Date.now() });
+    return json({ ok: true, employees: data });
   }
 
   return json({ error: 'Method not allowed' }, 405);

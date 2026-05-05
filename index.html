@@ -11,7 +11,13 @@
   <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
-  <main id="app" class="app">
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <span>Loading leave data&hellip;</span>
+    </div>
+  </div>
+  <main id="app" class="app" style="opacity:0;pointer-events:none;transition:opacity .3s;">
     <header class="topbar">
       <div class="brand">
         <div class="brand-icon">
@@ -74,14 +80,14 @@
         </div>
         <span class="kpi-badge kpi-badge-approved" data-kpi="approved">0</span>
         <div class="kpi-value" data-kpi-value="approved">0</div>
-        <div class="kpi-label">Decisions</div>
+        <div class="kpi-label">Approved</div>
       </div>
       <div class="kpi">
         <div class="kpi-icon kpi-rejected">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </div>
         <div class="kpi-value" data-kpi-value="rejected">0</div>
-        <div class="kpi-label">Employees</div>
+        <div class="kpi-label">Rejected</div>
       </div>
     </section>
 

@@ -78,6 +78,21 @@ let currentUser = null;
 let activeTab = 'calendar';
 let calMonth = new Date().getMonth();
 let dayModalDate = null;
+let isLoading = false;
+
+function setLoading(on) {
+  isLoading = on;
+  const overlay = document.getElementById('loading-overlay');
+  const app = document.getElementById('app');
+  if (on) {
+    if (overlay) { overlay.classList.remove('fade-out'); overlay.classList.remove('hidden'); }
+    if (app) { app.style.opacity = '0'; app.style.pointerEvents = 'none'; }
+  } else {
+    if (overlay) overlay.classList.add('fade-out');
+    if (app) { app.style.opacity = '1'; app.style.pointerEvents = 'auto'; }
+    setTimeout(() => { if (overlay) overlay.classList.add('hidden'); }, 350);
+  }
+}
 
 function isManager() { return currentUser !== null; }
 
@@ -189,7 +204,9 @@ function applyLocalMutation(action, extra) {
           by: currentUser || 'manager',
           at: new Date().toISOString(),
         });
-        emp.leaves[extra.index].status = 'pending';
+        emp.leaves[extra.index].status = 'approved';
+        emp.leaves[extra.index].approvedBy = currentUser || 'manager';
+        emp.leaves[extra.index].approvedAt = new Date().toISOString();
       }
       break;
     }
@@ -202,7 +219,9 @@ function applyLocalMutation(action, extra) {
           by: currentUser || 'manager',
           at: new Date().toISOString(),
         });
-        emp.leaves[extra.index].status = 'pending';
+        emp.leaves[extra.index].status = 'rejected';
+        emp.leaves[extra.index].rejectedBy = currentUser || 'manager';
+        emp.leaves[extra.index].rejectedAt = new Date().toISOString();
       }
       break;
     }
@@ -298,21 +317,19 @@ function updateAuthUI() {
 // ============================================================
 function updateKPIs() {
   const counts = { pending: 0, approved: 0, rejected: 0 };
-  let totalDecisions = 0;
   store.employees.forEach(e => e.leaves.forEach(l => {
     counts[l.status] = (counts[l.status] || 0) + 1;
-    if (l.approvalLog) totalDecisions += l.approvalLog.length;
   }));
   const pv = document.querySelector('[data-kpi-value="pending"]');
   const av = document.querySelector('[data-kpi-value="approved"]');
   const rv = document.querySelector('[data-kpi-value="rejected"]');
   if (pv) pv.textContent = counts.pending;
-  if (av) av.textContent = totalDecisions;
-  if (rv) rv.textContent = store.employees.length;
+  if (av) av.textContent = counts.approved;
+  if (rv) rv.textContent = counts.rejected;
   const pb = document.querySelector('[data-kpi="pending"]');
   const ab = document.querySelector('[data-kpi="approved"]');
   if (pb) pb.textContent = counts.pending;
-  if (ab) ab.textContent = totalDecisions;
+  if (ab) ab.textContent = counts.approved;
 
   const badge = document.getElementById('approval-badge');
   if (badge) {
@@ -379,7 +396,7 @@ function renderCalendar() {
     }
     for (const l of leaves) {
       if (shown >= maxShow) break;
-      html += `<div class="cal-leave cal-pending"><span class="cal-status-dot"></span>${l.empName}</div>`;
+      html += `<div class="cal-leave cal-${l.status}"><span class="cal-status-dot"></span>${l.empName}</div>`;
       shown++;
     }
     const total = leaves.length + evts.length + blks.length;
@@ -446,11 +463,13 @@ function openDayDetail(day) {
   leaves.forEach(l => {
     const logCount = (l.approvalLog && l.approvalLog.length) || 0;
     const logNote = logCount > 0 ? ` \u00B7 ${logCount} review${logCount > 1 ? 's' : ''}` : '';
-    html += `<div class="day-detail-entry dde-pending">
+    const statusIcon = l.status === 'approved' ? '\u2713' : l.status === 'rejected' ? '\u2717' : '\u25CF';
+    const statusLabel = l.status[0].toUpperCase() + l.status.slice(1);
+    html += `<div class="day-detail-entry dde-${l.status}">
       <div class="dde-avatar">${l.empName[0]}</div>
       <div class="dde-info">
         <div class="dde-name">${l.empName}</div>
-        <div class="dde-status">\u25CF Pending &middot; ${l.dates} (${l.days}d)${logNote}</div>
+        <div class="dde-status">${statusIcon} ${statusLabel} &middot; ${l.dates} (${l.days}d)${logNote}</div>
       </div>
     </div>`;
   });
@@ -724,8 +743,14 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 // ============================================================
 window.addEventListener('beforeunload', () => saveLocal());
 
+function hideLoading() {
+  setLoading(false);
+}
+
 (async () => {
+  setLoading(true);
   await loadData();
+  hideLoading();
 
   if (!wireIdentity()) {
     let tries = 0;
@@ -735,4 +760,14 @@ window.addEventListener('beforeunload', () => saveLocal());
   }
 
   render();
+
+  setInterval(async () => {
+    const remote = await apiGet();
+    if (remote && remote.employees) {
+      store = { employees: remote.employees };
+      migrateLeaves();
+      saveLocal();
+      render();
+    }
+  }, 30000);
 })();
