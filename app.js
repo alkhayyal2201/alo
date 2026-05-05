@@ -21,52 +21,52 @@ const blockouts = [
 const SEED_EMPLOYEES = [
   { name: 'Amen', leaves: [] },
   { name: 'Ousama', leaves: [
-    { month: 5, status: 'pending', dates: '20 - 30 Jun', days: 11, startDate: '2026-06-20', endDate: '2026-06-30' },
-    { month: 6, status: 'pending', dates: '1 - 24 Jul',  days: 24, startDate: '2026-07-01', endDate: '2026-07-24' },
+    { month: 5, status: 'pending', dates: '20 - 30 Jun', days: 11, startDate: '2026-06-20', endDate: '2026-06-30', approvalLog: [] },
+    { month: 6, status: 'pending', dates: '1 - 24 Jul',  days: 24, startDate: '2026-07-01', endDate: '2026-07-24', approvalLog: [] },
   ]},
   { name: 'Ali', leaves: [] },
   { name: 'Hardeep', leaves: [
-    { month: 9, status: 'pending', dates: '1 - 31 Oct', days: 31, startDate: '2026-10-01', endDate: '2026-10-31' },
+    { month: 9, status: 'pending', dates: '1 - 31 Oct', days: 31, startDate: '2026-10-01', endDate: '2026-10-31', approvalLog: [] },
   ]},
   { name: 'Ariel', leaves: [
-    { month: 5, status: 'pending', dates: '30 Jun',     days: 1,  startDate: '2026-06-30', endDate: '2026-06-30' },
-    { month: 6, status: 'pending', dates: '1 - 31 Jul', days: 31, startDate: '2026-07-01', endDate: '2026-07-31' },
+    { month: 5, status: 'pending', dates: '30 Jun',     days: 1,  startDate: '2026-06-30', endDate: '2026-06-30', approvalLog: [] },
+    { month: 6, status: 'pending', dates: '1 - 31 Jul', days: 31, startDate: '2026-07-01', endDate: '2026-07-31', approvalLog: [] },
   ]},
   { name: 'Jojo', leaves: [] },
   { name: 'Maryam', leaves: [
-    { month: 1,  status: 'approved', dates: '6 - 15 Feb',  days: 10, startDate: '2026-02-06', endDate: '2026-02-15' },
-    { month: 6,  status: 'pending',  dates: '5 - 8 Jul',   days: 4,  startDate: '2026-07-05', endDate: '2026-07-08' },
-    { month: 9,  status: 'pending',  dates: '29 - 31 Oct', days: 3,  startDate: '2026-10-29', endDate: '2026-10-31' },
-    { month: 10, status: 'pending',  dates: '1 - 5 Nov',   days: 5,  startDate: '2026-11-01', endDate: '2026-11-05' },
+    { month: 1,  status: 'pending', dates: '6 - 15 Feb',  days: 10, startDate: '2026-02-06', endDate: '2026-02-15', approvalLog: [] },
+    { month: 6,  status: 'pending', dates: '5 - 8 Jul',   days: 4,  startDate: '2026-07-05', endDate: '2026-07-08', approvalLog: [] },
+    { month: 9,  status: 'pending', dates: '29 - 31 Oct', days: 3,  startDate: '2026-10-29', endDate: '2026-10-31', approvalLog: [] },
+    { month: 10, status: 'pending', dates: '1 - 5 Nov',   days: 5,  startDate: '2026-11-01', endDate: '2026-11-05', approvalLog: [] },
   ]},
   { name: 'Brenda', leaves: [
-    { month: 0,  status: 'approved', dates: '23 - 24 Jan', days: 2,  startDate: '2026-01-23', endDate: '2026-01-24' },
-    { month: 4,  status: 'pending',  dates: '1 - 14 May',  days: 14, startDate: '2026-05-01', endDate: '2026-05-14' },
-    { month: 8,  status: 'pending',  dates: '15 - 28 Sep', days: 14, startDate: '2026-09-15', endDate: '2026-09-28' },
-    { month: 11, status: 'pending',  dates: '1 - 28 Dec',  days: 28, startDate: '2026-12-01', endDate: '2026-12-28' },
+    { month: 0,  status: 'pending', dates: '23 - 24 Jan', days: 2,  startDate: '2026-01-23', endDate: '2026-01-24', approvalLog: [] },
+    { month: 4,  status: 'pending', dates: '1 - 14 May',  days: 14, startDate: '2026-05-01', endDate: '2026-05-14', approvalLog: [] },
+    { month: 8,  status: 'pending', dates: '15 - 28 Sep', days: 14, startDate: '2026-09-15', endDate: '2026-09-28', approvalLog: [] },
+    { month: 11, status: 'pending', dates: '1 - 28 Dec',  days: 28, startDate: '2026-12-01', endDate: '2026-12-28', approvalLog: [] },
   ]},
   { name: 'Rhea', leaves: [
-    { month: 4, status: 'pending', dates: '8 - 18 May',  days: 11, startDate: '2026-05-08', endDate: '2026-05-18' },
-    { month: 7, status: 'pending', dates: '15 - 30 Aug', days: 16, startDate: '2026-08-15', endDate: '2026-08-30' },
+    { month: 4, status: 'pending', dates: '8 - 18 May',  days: 11, startDate: '2026-05-08', endDate: '2026-05-18', approvalLog: [] },
+    { month: 7, status: 'pending', dates: '15 - 30 Aug', days: 16, startDate: '2026-08-15', endDate: '2026-08-30', approvalLog: [] },
   ]},
   { name: 'Najwa', leaves: [] },
   { name: 'Roaa', leaves: [
-    { month: 0, status: 'approved', dates: '26 - 31 Jan', days: 6, startDate: '2026-01-26', endDate: '2026-01-31' },
-    { month: 1, status: 'approved', dates: '1 - 4 Feb',   days: 4, startDate: '2026-02-01', endDate: '2026-02-04' },
+    { month: 0, status: 'pending', dates: '26 - 31 Jan', days: 6, startDate: '2026-01-26', endDate: '2026-01-31', approvalLog: [] },
+    { month: 1, status: 'pending', dates: '1 - 4 Feb',   days: 4, startDate: '2026-02-01', endDate: '2026-02-04', approvalLog: [] },
   ]},
   { name: 'Mochi', leaves: [
-    { month: 0, status: 'approved', dates: '24 - 31 Jan', days: 8,  startDate: '2026-01-24', endDate: '2026-01-31' },
-    { month: 1, status: 'approved', dates: '1 - 4 Feb',   days: 4,  startDate: '2026-02-01', endDate: '2026-02-04' },
-    { month: 2, status: 'approved', dates: '29 - 31 Mar', days: 3,  startDate: '2026-03-29', endDate: '2026-03-31' },
-    { month: 3, status: 'approved', dates: '1 - 11 Apr',  days: 11, startDate: '2026-04-01', endDate: '2026-04-11' },
-    { month: 9, status: 'pending',  dates: '1 - 15 Oct',  days: 15, startDate: '2026-10-01', endDate: '2026-10-15' },
+    { month: 0, status: 'pending', dates: '24 - 31 Jan', days: 8,  startDate: '2026-01-24', endDate: '2026-01-31', approvalLog: [] },
+    { month: 1, status: 'pending', dates: '1 - 4 Feb',   days: 4,  startDate: '2026-02-01', endDate: '2026-02-04', approvalLog: [] },
+    { month: 2, status: 'pending', dates: '29 - 31 Mar', days: 3,  startDate: '2026-03-29', endDate: '2026-03-31', approvalLog: [] },
+    { month: 3, status: 'pending', dates: '1 - 11 Apr',  days: 11, startDate: '2026-04-01', endDate: '2026-04-11', approvalLog: [] },
+    { month: 9, status: 'pending', dates: '1 - 15 Oct',  days: 15, startDate: '2026-10-01', endDate: '2026-10-15', approvalLog: [] },
   ]},
   { name: 'Arth', leaves: [
-    { month: 6, status: 'pending', dates: '1 - 31 Jul', days: 31, startDate: '2026-07-01', endDate: '2026-07-31' },
+    { month: 6, status: 'pending', dates: '1 - 31 Jul', days: 31, startDate: '2026-07-01', endDate: '2026-07-31', approvalLog: [] },
   ]},
   { name: 'Isa', leaves: [
-    { month: 5,  status: 'pending', dates: '18 - 29 Jun', days: 12, startDate: '2026-06-18', endDate: '2026-06-29' },
-    { month: 11, status: 'pending', dates: '12 - 31 Dec', days: 20, startDate: '2026-12-12', endDate: '2026-12-31' },
+    { month: 5,  status: 'pending', dates: '18 - 29 Jun', days: 12, startDate: '2026-06-18', endDate: '2026-06-29', approvalLog: [] },
+    { month: 11, status: 'pending', dates: '12 - 31 Dec', days: 20, startDate: '2026-12-12', endDate: '2026-12-31', approvalLog: [] },
   ]},
 ];
 
@@ -117,26 +117,31 @@ function loadLocal() {
 }
 
 function saveLocal() {
+  store._ts = Date.now();
   localStorage.setItem(LOCAL_KEY, JSON.stringify(store));
 }
 
 async function loadData() {
-  const remote = await apiGet();
-  if (remote && remote.employees) {
-    store = remote;
-    migrateLeaves();
-    saveLocal();
-    return;
-  }
   const local = loadLocal();
   if (local && local.employees) {
     store = local;
     migrateLeaves();
     saveLocal();
+  }
+  const remote = await apiGet();
+  if (remote && remote.employees) {
+    const localTs = store._ts || 0;
+    if (!store.employees.length || (remote._ts || 0) > localTs) {
+      store = remote;
+      migrateLeaves();
+    }
+    saveLocal();
     return;
   }
-  store = { employees: JSON.parse(JSON.stringify(SEED_EMPLOYEES)) };
-  saveLocal();
+  if (!store.employees || !store.employees.length) {
+    store = { employees: JSON.parse(JSON.stringify(SEED_EMPLOYEES)) };
+    saveLocal();
+  }
 }
 
 function migrateLeaves() {
@@ -178,18 +183,26 @@ function applyLocalMutation(action, extra) {
     case 'approve': {
       const emp = store.employees.find(e => e.name === extra.employee);
       if (emp && emp.leaves[extra.index]) {
-        emp.leaves[extra.index].status = 'approved';
-        emp.leaves[extra.index].approvedBy = currentUser;
-        emp.leaves[extra.index].approvedAt = new Date().toISOString();
+        if (!emp.leaves[extra.index].approvalLog) emp.leaves[extra.index].approvalLog = [];
+        emp.leaves[extra.index].approvalLog.push({
+          action: 'approved',
+          by: currentUser || 'manager',
+          at: new Date().toISOString(),
+        });
+        emp.leaves[extra.index].status = 'pending';
       }
       break;
     }
     case 'reject': {
       const emp = store.employees.find(e => e.name === extra.employee);
       if (emp && emp.leaves[extra.index]) {
-        emp.leaves[extra.index].status = 'rejected';
-        emp.leaves[extra.index].rejectedBy = currentUser;
-        emp.leaves[extra.index].rejectedAt = new Date().toISOString();
+        if (!emp.leaves[extra.index].approvalLog) emp.leaves[extra.index].approvalLog = [];
+        emp.leaves[extra.index].approvalLog.push({
+          action: 'rejected',
+          by: currentUser || 'manager',
+          at: new Date().toISOString(),
+        });
+        emp.leaves[extra.index].status = 'pending';
       }
       break;
     }
@@ -285,19 +298,21 @@ function updateAuthUI() {
 // ============================================================
 function updateKPIs() {
   const counts = { pending: 0, approved: 0, rejected: 0 };
+  let totalDecisions = 0;
   store.employees.forEach(e => e.leaves.forEach(l => {
     counts[l.status] = (counts[l.status] || 0) + 1;
+    if (l.approvalLog) totalDecisions += l.approvalLog.length;
   }));
   const pv = document.querySelector('[data-kpi-value="pending"]');
   const av = document.querySelector('[data-kpi-value="approved"]');
   const rv = document.querySelector('[data-kpi-value="rejected"]');
   if (pv) pv.textContent = counts.pending;
-  if (av) av.textContent = counts.approved;
-  if (rv) rv.textContent = counts.rejected;
+  if (av) av.textContent = totalDecisions;
+  if (rv) rv.textContent = store.employees.length;
   const pb = document.querySelector('[data-kpi="pending"]');
   const ab = document.querySelector('[data-kpi="approved"]');
   if (pb) pb.textContent = counts.pending;
-  if (ab) ab.textContent = counts.approved;
+  if (ab) ab.textContent = totalDecisions;
 
   const badge = document.getElementById('approval-badge');
   if (badge) {
@@ -364,8 +379,7 @@ function renderCalendar() {
     }
     for (const l of leaves) {
       if (shown >= maxShow) break;
-      const icon = l.status === 'approved' ? '\u2713' : l.status === 'rejected' ? '\u2717' : '\u25CF';
-      html += `<div class="cal-leave cal-${l.status}"><span class="cal-status-dot"></span>${l.empName}</div>`;
+      html += `<div class="cal-leave cal-pending"><span class="cal-status-dot"></span>${l.empName}</div>`;
       shown++;
     }
     const total = leaves.length + evts.length + blks.length;
@@ -430,13 +444,13 @@ function openDayDetail(day) {
     return (order[a.status] || 0) - (order[b.status] || 0);
   });
   leaves.forEach(l => {
-    const statusLabel = l.status[0].toUpperCase() + l.status.slice(1);
-    const statusIcon = l.status === 'approved' ? '\u2713 Approved' : l.status === 'rejected' ? '\u2717 Rejected' : '\u25CF Pending';
-    html += `<div class="day-detail-entry dde-${l.status}">
+    const logCount = (l.approvalLog && l.approvalLog.length) || 0;
+    const logNote = logCount > 0 ? ` \u00B7 ${logCount} review${logCount > 1 ? 's' : ''}` : '';
+    html += `<div class="day-detail-entry dde-pending">
       <div class="dde-avatar">${l.empName[0]}</div>
       <div class="dde-info">
         <div class="dde-name">${l.empName}</div>
-        <div class="dde-status">${statusIcon} &middot; ${l.dates} (${l.days}d)</div>
+        <div class="dde-status">\u25CF Pending &middot; ${l.dates} (${l.days}d)${logNote}</div>
       </div>
     </div>`;
   });
@@ -527,8 +541,17 @@ function renderApprovals() {
   }
   el.innerHTML =
     `<div class="approval-count">${pending.length} pending request${pending.length !== 1 ? 's' : ''}</div>` +
-    pending.map(r =>
-      `<div class="approval-card">
+    pending.map(r => {
+      const logHtml = (r.leave.approvalLog && r.leave.approvalLog.length)
+        ? r.leave.approvalLog.slice().reverse().map(e => {
+            const d = new Date(e.at);
+            const timeStr = `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            const icon = e.action === 'approved' ? '\u2713' : '\u2717';
+            const cls = e.action === 'approved' ? 'log-approved' : 'log-rejected';
+            return `<div class="approval-log-entry ${cls}">${icon} ${e.action} by ${e.by} \u2014 ${timeStr}</div>`;
+          }).join('')
+        : '';
+      return `<div class="approval-card">
         <div class="approval-header">
           <div class="approval-emp">
             <div class="approval-avatar">${r.emp.name[0]}</div>
@@ -537,6 +560,7 @@ function renderApprovals() {
         </div>
         <div class="approval-body">${r.leave.dates} &middot; ${r.leave.days} day${r.leave.days !== 1 ? 's' : ''}</div>
         ${r.leave.notes ? `<div class="approval-notes">\u201C${r.leave.notes}\u201D</div>` : ''}
+        ${logHtml ? `<div class="approval-log">${logHtml}</div>` : ''}
         <div class="approval-actions">
           <button class="btn-sm btn-approve approve-btn" data-emp="${r.emp.name}" data-idx="${r.idx}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve
@@ -545,8 +569,8 @@ function renderApprovals() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Reject
           </button>
         </div>
-      </div>`
-    ).join('');
+      </div>`;
+    }).join('');
 
   el.querySelectorAll('.approve-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -634,6 +658,7 @@ document.getElementById('leave-submit').addEventListener('click', async () => {
     startDate: start,
     endDate: end,
     notes: notes || undefined,
+    approvalLog: [],
   };
   await mutate('submit', { employee: empName, leave: leaveObj });
   closeLeaveModal();
@@ -697,6 +722,8 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 // ============================================================
 // Init — app visible immediately, no auth gate
 // ============================================================
+window.addEventListener('beforeunload', () => saveLocal());
+
 (async () => {
   await loadData();
 
