@@ -1,6 +1,8 @@
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const YEAR = 2026;
+const SEED_YEAR = 2026;
+const MIN_YEAR = 2026;
+const MAX_YEAR = 2027;
 
 const calendarEvents = [
   { month: 1,  label: '18th Ramadan', startDate: '2026-02-18', endDate: '2026-02-18' },
@@ -77,8 +79,12 @@ let store = { employees: [] };
 let currentUser = null;
 let activeTab = 'calendar';
 let calMonth = new Date().getMonth();
+let calYear = new Date().getFullYear();
+if (calYear < MIN_YEAR) calYear = MIN_YEAR;
+if (calYear > MAX_YEAR) calYear = MAX_YEAR;
 let dayModalDate = null;
 let isLoading = false;
+let syncHandle = null;
 
 function setLoading(on) {
   isLoading = on;
@@ -138,22 +144,17 @@ function saveLocal() {
 
 async function loadData() {
   const local = loadLocal();
-  if (local && local.employees) {
+  if (local && local.employees && local.employees.length) {
     store = local;
     migrateLeaves();
-    saveLocal();
   }
+
   const remote = await apiGet();
-  if (remote && remote.employees) {
-    const localTs = store._ts || 0;
-    if (!store.employees.length || (remote._ts || 0) > localTs) {
-      store = remote;
-      migrateLeaves();
-    }
+  if (remote && remote.employees && remote.employees.length) {
+    store = { employees: remote.employees };
+    migrateLeaves();
     saveLocal();
-    return;
-  }
-  if (!store.employees || !store.employees.length) {
+  } else if (!store.employees || !store.employees.length) {
     store = { employees: JSON.parse(JSON.stringify(SEED_EMPLOYEES)) };
     saveLocal();
   }
@@ -166,8 +167,9 @@ function migrateLeaves() {
       if (leave.startDate && leave.endDate) return;
       const nums = (leave.dates || '').match(/\d+/g);
       if (nums && leave.month != null) {
-        if (!leave.startDate) leave.startDate = isoDate(YEAR, leave.month, parseInt(nums[0]));
-        if (!leave.endDate) leave.endDate = isoDate(YEAR, leave.month, parseInt(nums[nums.length - 1]));
+        const y = leave.startDate ? new Date(leave.startDate + 'T00:00:00').getFullYear() : SEED_YEAR;
+        if (!leave.startDate) leave.startDate = isoDate(y, leave.month, parseInt(nums[0]));
+        if (!leave.endDate) leave.endDate = isoDate(y, leave.month, parseInt(nums[nums.length - 1]));
         dirty = true;
       }
     });
@@ -176,16 +178,16 @@ function migrateLeaves() {
 }
 
 async function mutate(action, extra) {
-  const payload = { action, ...extra };
-  const remote = await apiPost(payload);
+  applyLocalMutation(action, extra);
+  saveLocal();
+  render();
+
+  const remote = await apiPost({ action, ...extra });
   if (remote && remote.employees) {
     store = { employees: remote.employees };
     saveLocal();
-    return true;
+    render();
   }
-  applyLocalMutation(action, extra);
-  saveLocal();
-  return true;
 }
 
 function applyLocalMutation(action, extra) {
@@ -280,6 +282,13 @@ function isoDate(y, m, d) {
   return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
+function dataSignature() {
+  return JSON.stringify(store.employees.map(e => ({
+    n: e.name,
+    l: e.leaves.map(l => l.startDate + l.endDate + l.status),
+  })));
+}
+
 // ============================================================
 // UI state
 // ============================================================
@@ -350,13 +359,13 @@ function renderCalendar() {
   const label = document.getElementById('cal-month-label');
   if (!grid || !label) return;
 
-  label.textContent = `${MONTHS[calMonth]} ${YEAR}`;
+  label.textContent = `${MONTHS[calMonth]} ${calYear}`;
 
-  const daysInMonth = new Date(YEAR, calMonth + 1, 0).getDate();
-  const firstDow = new Date(YEAR, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const firstDow = new Date(calYear, calMonth, 1).getDay();
   const today = new Date();
-  const isThisMonth = today.getFullYear() === YEAR && today.getMonth() === calMonth;
-  const prevMonthDays = new Date(YEAR, calMonth, 0).getDate();
+  const isThisMonth = today.getFullYear() === calYear && today.getMonth() === calMonth;
+  const prevMonthDays = new Date(calYear, calMonth, 0).getDate();
   const maxShow = 3;
 
   let html = '';
@@ -370,9 +379,9 @@ function renderCalendar() {
     const dow = (firstDow + d - 1) % 7;
     const isWeekend = dow === 5 || dow === 6;
     const isToday = isThisMonth && today.getDate() === d;
-    const leaves = getLeavesForDay(YEAR, calMonth, d);
-    const evts = getEventsForDay(YEAR, calMonth, d);
-    const blks = getBlockoutsForDay(YEAR, calMonth, d);
+    const leaves = getLeavesForDay(calYear, calMonth, d);
+    const evts = getEventsForDay(calYear, calMonth, d);
+    const blks = getBlockoutsForDay(calYear, calMonth, d);
     const hasContent = leaves.length + evts.length + blks.length > 0;
 
     let cls = 'cal-cell';
@@ -430,11 +439,11 @@ function openDayDetail(day) {
   const body = document.getElementById('day-modal-body');
   const reqBtn = document.getElementById('day-modal-request');
 
-  title.textContent = `${MONTHS_SHORT[calMonth]} ${day}, ${YEAR}`;
+  title.textContent = `${MONTHS_SHORT[calMonth]} ${day}, ${calYear}`;
 
-  const leaves = getLeavesForDay(YEAR, calMonth, day);
-  const evts = getEventsForDay(YEAR, calMonth, day);
-  const blks = getBlockoutsForDay(YEAR, calMonth, day);
+  const leaves = getLeavesForDay(calYear, calMonth, day);
+  const evts = getEventsForDay(calYear, calMonth, day);
+  const blks = getBlockoutsForDay(calYear, calMonth, day);
 
   let html = '';
 
@@ -488,21 +497,31 @@ document.getElementById('day-modal-close').addEventListener('click', () => {
 document.getElementById('day-modal-request').addEventListener('click', () => {
   document.getElementById('day-modal').classList.add('hidden');
   if (dayModalDate) {
-    const d = isoDate(YEAR, calMonth, dayModalDate);
+    const d = isoDate(calYear, calMonth, dayModalDate);
     openLeaveModal(calMonth, d);
   }
 });
 
 document.getElementById('cal-prev').addEventListener('click', () => {
-  calMonth = calMonth === 0 ? 11 : calMonth - 1;
+  if (calMonth === 0) {
+    if (calYear > MIN_YEAR) { calMonth = 11; calYear--; }
+  } else {
+    calMonth--;
+  }
   renderCalendar();
 });
 document.getElementById('cal-next').addEventListener('click', () => {
-  calMonth = calMonth === 11 ? 0 : calMonth + 1;
+  if (calMonth === 11) {
+    if (calYear < MAX_YEAR) { calMonth = 0; calYear++; }
+  } else {
+    calMonth++;
+  }
   renderCalendar();
 });
 document.getElementById('cal-today-btn').addEventListener('click', () => {
-  calMonth = new Date().getMonth();
+  const now = new Date();
+  calMonth = now.getMonth();
+  calYear = Math.max(MIN_YEAR, Math.min(MAX_YEAR, now.getFullYear()));
   renderCalendar();
 });
 
@@ -522,9 +541,10 @@ function renderMyLeaves() {
     .sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''))
     .map((l) => {
       const origI = me.leaves.indexOf(l);
+      const leaveYear = l.startDate ? new Date(l.startDate + 'T00:00:00').getFullYear() : SEED_YEAR;
       return `<div class="leave-card card-${l.status}">
         <div class="leave-card-row">
-          <span class="leave-card-month">${MONTHS[l.month]} 2026</span>
+          <span class="leave-card-month">${MONTHS[l.month]} ${leaveYear}</span>
           <span class="chip-inline chip-${l.status}">${l.status[0].toUpperCase() + l.status.slice(1)}</span>
         </div>
         <div class="leave-card-dates">${l.dates} &middot; ${l.days} day${l.days !== 1 ? 's' : ''}</div>
@@ -536,7 +556,6 @@ function renderMyLeaves() {
   el.querySelectorAll('.cancel-leave').forEach(btn => {
     btn.addEventListener('click', async () => {
       await mutate('cancel', { employee: btn.dataset.emp, index: parseInt(btn.dataset.idx, 10) });
-      render();
     });
   });
 }
@@ -561,6 +580,7 @@ function renderApprovals() {
   el.innerHTML =
     `<div class="approval-count">${pending.length} pending request${pending.length !== 1 ? 's' : ''}</div>` +
     pending.map(r => {
+      const leaveYear = r.leave.startDate ? new Date(r.leave.startDate + 'T00:00:00').getFullYear() : SEED_YEAR;
       const logHtml = (r.leave.approvalLog && r.leave.approvalLog.length)
         ? r.leave.approvalLog.slice().reverse().map(e => {
             const d = new Date(e.at);
@@ -574,7 +594,7 @@ function renderApprovals() {
         <div class="approval-header">
           <div class="approval-emp">
             <div class="approval-avatar">${r.emp.name[0]}</div>
-            <div><strong>${r.emp.name}</strong><br><span class="approval-month">${MONTHS[r.leave.month]} 2026</span></div>
+            <div><strong>${r.emp.name}</strong><br><span class="approval-month">${MONTHS[r.leave.month]} ${leaveYear}</span></div>
           </div>
         </div>
         <div class="approval-body">${r.leave.dates} &middot; ${r.leave.days} day${r.leave.days !== 1 ? 's' : ''}</div>
@@ -597,7 +617,6 @@ function renderApprovals() {
         employee: btn.dataset.emp,
         index: parseInt(btn.dataset.idx, 10),
       });
-      render();
     });
   });
   el.querySelectorAll('.reject-btn').forEach(btn => {
@@ -606,7 +625,6 @@ function renderApprovals() {
         employee: btn.dataset.emp,
         index: parseInt(btn.dataset.idx, 10),
       });
-      render();
     });
   });
 }
@@ -632,6 +650,7 @@ document.querySelectorAll('.tab').forEach(t => {
 // Leave request modal
 // ============================================================
 let modalMonth = null;
+let modalYear = null;
 
 function populateEmployeeSelect() {
   const sel = document.getElementById('leave-employee');
@@ -642,10 +661,11 @@ function populateEmployeeSelect() {
 
 function openLeaveModal(month, prefillStart) {
   modalMonth = month;
-  document.getElementById('leave-modal-month').textContent = `For ${MONTHS[month]} ${YEAR}`;
+  modalYear = calYear;
+  document.getElementById('leave-modal-month').textContent = `For ${MONTHS[month]} ${calYear}`;
   populateEmployeeSelect();
   if (prefillStart) document.getElementById('leave-start').value = prefillStart;
-  else document.getElementById('leave-start').value = isoDate(YEAR, month, 1);
+  else document.getElementById('leave-start').value = isoDate(calYear, month, 1);
   document.getElementById('leave-end').value = '';
   document.getElementById('leave-notes').value = '';
   document.getElementById('leave-modal').classList.remove('hidden');
@@ -679,9 +699,8 @@ document.getElementById('leave-submit').addEventListener('click', async () => {
     notes: notes || undefined,
     approvalLog: [],
   };
-  await mutate('submit', { employee: empName, leave: leaveObj });
   closeLeaveModal();
-  render();
+  await mutate('submit', { employee: empName, leave: leaveObj });
 });
 
 // ============================================================
@@ -739,18 +758,14 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 });
 
 // ============================================================
-// Init — app visible immediately, no auth gate
+// Init
 // ============================================================
 window.addEventListener('beforeunload', () => saveLocal());
-
-function hideLoading() {
-  setLoading(false);
-}
 
 (async () => {
   setLoading(true);
   await loadData();
-  hideLoading();
+  setLoading(false);
 
   if (!wireIdentity()) {
     let tries = 0;
@@ -761,13 +776,14 @@ function hideLoading() {
 
   render();
 
-  setInterval(async () => {
+  syncHandle = setInterval(async () => {
+    const before = dataSignature();
     const remote = await apiGet();
     if (remote && remote.employees) {
       store = { employees: remote.employees };
       migrateLeaves();
       saveLocal();
-      render();
+      if (dataSignature() !== before) render();
     }
   }, 30000);
 })();
