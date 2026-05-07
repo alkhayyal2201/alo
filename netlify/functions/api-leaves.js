@@ -1,59 +1,74 @@
 import { getStore } from '@netlify/blobs';
+import {
+  sql,
+  ensureSchema,
+  fetchEmployeesWithLeaves,
+  isEmpty,
+  seedFromList,
+  SEED_EMPLOYEES,
+} from '../lib/db.js';
 
-const BLOB_STORE = 'leave-data';
-const KEY = 'employees';
+const LEGACY_BLOB_STORE = 'leave-data';
+const LEGACY_BLOB_KEY = 'employees';
 
-const SEED = [
-  { name: 'Amen', leaves: [] },
-  { name: 'Ousama', leaves: [
-    { month: 5, status: 'pending', dates: '20 - 30 Jun', days: 11, startDate: '2026-06-20', endDate: '2026-06-30', approvalLog: [] },
-    { month: 6, status: 'pending', dates: '1 - 24 Jul',  days: 24, startDate: '2026-07-01', endDate: '2026-07-24', approvalLog: [] },
-  ]},
-  { name: 'Ali', leaves: [] },
-  { name: 'Hardeep', leaves: [
-    { month: 9, status: 'pending', dates: '1 - 31 Oct', days: 31, startDate: '2026-10-01', endDate: '2026-10-31', approvalLog: [] },
-  ]},
-  { name: 'Ariel', leaves: [
-    { month: 5, status: 'pending', dates: '30 Jun',     days: 1,  startDate: '2026-06-30', endDate: '2026-06-30', approvalLog: [] },
-    { month: 6, status: 'pending', dates: '1 - 31 Jul', days: 31, startDate: '2026-07-01', endDate: '2026-07-31', approvalLog: [] },
-  ]},
-  { name: 'Jojo', leaves: [] },
-  { name: 'Maryam', leaves: [
-    { month: 1,  status: 'pending', dates: '6 - 15 Feb',  days: 10, startDate: '2026-02-06', endDate: '2026-02-15', approvalLog: [] },
-    { month: 6,  status: 'pending', dates: '5 - 8 Jul',   days: 4,  startDate: '2026-07-05', endDate: '2026-07-08', approvalLog: [] },
-    { month: 9,  status: 'pending', dates: '29 - 31 Oct', days: 3,  startDate: '2026-10-29', endDate: '2026-10-31', approvalLog: [] },
-    { month: 10, status: 'pending', dates: '1 - 5 Nov',   days: 5,  startDate: '2026-11-01', endDate: '2026-11-05', approvalLog: [] },
-  ]},
-  { name: 'Brenda', leaves: [
-    { month: 0,  status: 'pending', dates: '23 - 24 Jan', days: 2,  startDate: '2026-01-23', endDate: '2026-01-24', approvalLog: [] },
-    { month: 4,  status: 'pending', dates: '1 - 14 May',  days: 14, startDate: '2026-05-01', endDate: '2026-05-14', approvalLog: [] },
-    { month: 8,  status: 'pending', dates: '15 - 28 Sep', days: 14, startDate: '2026-09-15', endDate: '2026-09-28', approvalLog: [] },
-    { month: 11, status: 'pending', dates: '1 - 28 Dec',  days: 28, startDate: '2026-12-01', endDate: '2026-12-28', approvalLog: [] },
-  ]},
-  { name: 'Rhea', leaves: [
-    { month: 4, status: 'pending', dates: '8 - 18 May',  days: 11, startDate: '2026-05-08', endDate: '2026-05-18', approvalLog: [] },
-    { month: 7, status: 'pending', dates: '15 - 30 Aug', days: 16, startDate: '2026-08-15', endDate: '2026-08-30', approvalLog: [] },
-  ]},
-  { name: 'Najwa', leaves: [] },
-  { name: 'Roaa', leaves: [
-    { month: 0, status: 'pending', dates: '26 - 31 Jan', days: 6, startDate: '2026-01-26', endDate: '2026-01-31', approvalLog: [] },
-    { month: 1, status: 'pending', dates: '1 - 4 Feb',   days: 4, startDate: '2026-02-01', endDate: '2026-02-04', approvalLog: [] },
-  ]},
-  { name: 'Mochi', leaves: [
-    { month: 0, status: 'pending', dates: '24 - 31 Jan', days: 8,  startDate: '2026-01-24', endDate: '2026-01-31', approvalLog: [] },
-    { month: 1, status: 'pending', dates: '1 - 4 Feb',   days: 4,  startDate: '2026-02-01', endDate: '2026-02-04', approvalLog: [] },
-    { month: 2, status: 'pending', dates: '29 - 31 Mar', days: 3,  startDate: '2026-03-29', endDate: '2026-03-31', approvalLog: [] },
-    { month: 3, status: 'pending', dates: '1 - 11 Apr',  days: 11, startDate: '2026-04-01', endDate: '2026-04-11', approvalLog: [] },
-    { month: 9, status: 'pending', dates: '1 - 15 Oct',  days: 15, startDate: '2026-10-01', endDate: '2026-10-15', approvalLog: [] },
-  ]},
-  { name: 'Arth', leaves: [
-    { month: 6, status: 'pending', dates: '1 - 31 Jul', days: 31, startDate: '2026-07-01', endDate: '2026-07-31', approvalLog: [] },
-  ]},
-  { name: 'Isa', leaves: [
-    { month: 5,  status: 'pending', dates: '18 - 29 Jun', days: 12, startDate: '2026-06-18', endDate: '2026-06-29', approvalLog: [] },
-    { month: 11, status: 'pending', dates: '12 - 31 Dec', days: 20, startDate: '2026-12-12', endDate: '2026-12-31', approvalLog: [] },
-  ]},
-];
+let bootstrapPromise = null;
+
+async function bootstrap() {
+  if (bootstrapPromise) return bootstrapPromise;
+  bootstrapPromise = (async () => {
+    await ensureSchema();
+    if (!(await isEmpty())) return;
+
+    const legacy = await readLegacyBlob();
+    if (legacy && legacy.length) {
+      await importLegacy(legacy);
+    } else {
+      await seedFromList(SEED_EMPLOYEES);
+    }
+  })();
+  return bootstrapPromise;
+}
+
+async function readLegacyBlob() {
+  try {
+    const store = getStore(LEGACY_BLOB_STORE);
+    return await store.get(LEGACY_BLOB_KEY, { type: 'json' });
+  } catch {
+    return null;
+  }
+}
+
+async function importLegacy(employees) {
+  for (const e of employees) {
+    const empRows = await sql`
+      INSERT INTO employees (name) VALUES (${e.name})
+      ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+      RETURNING id
+    `;
+    const empId = empRows[0].id;
+    for (const l of (e.leaves || [])) {
+      const startDate = l.startDate;
+      const endDate = l.endDate;
+      if (!startDate || !endDate) continue;
+      const decidedBy = l.approvedBy || l.rejectedBy || null;
+      const decidedAt = l.approvedAt || l.rejectedAt || null;
+      const status = l.status === 'approved' || l.status === 'rejected' ? l.status : 'pending';
+      const leaveRows = await sql`
+        INSERT INTO leaves (employee_id, start_date, end_date, status, notes, decided_by, decided_at)
+        VALUES (${empId}, ${startDate}, ${endDate}, ${status}, ${l.notes || null}, ${decidedBy}, ${decidedAt})
+        RETURNING id
+      `;
+      const leaveId = leaveRows[0].id;
+      for (const entry of (l.approvalLog || [])) {
+        if (!entry || !entry.action) continue;
+        await sql`
+          INSERT INTO approval_log (leave_id, action, by_user, at)
+          VALUES (${leaveId}, ${entry.action}, ${entry.by || 'manager'}, ${entry.at || new Date().toISOString()})
+        `;
+      }
+    }
+  }
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -62,80 +77,97 @@ function json(data, status = 200) {
   });
 }
 
+async function respondWithEmployees(extra = {}) {
+  const employees = await fetchEmployeesWithLeaves();
+  return json({ employees, ...extra });
+}
+
+async function handleSubmit(body) {
+  const { employee, leave } = body;
+  if (!employee || !leave || !leave.startDate || !leave.endDate) {
+    return json({ error: 'Missing employee or leave dates' }, 400);
+  }
+  const empRows = await sql`SELECT id FROM employees WHERE name = ${employee} LIMIT 1`;
+  if (!empRows.length) return json({ error: 'Unknown employee' }, 404);
+  await sql`
+    INSERT INTO leaves (employee_id, start_date, end_date, status, notes)
+    VALUES (${empRows[0].id}, ${leave.startDate}, ${leave.endDate}, 'pending', ${leave.notes || null})
+  `;
+  return respondWithEmployees();
+}
+
+async function handleDecision(body, decision) {
+  const { leaveId, by } = body;
+  if (!leaveId) return json({ error: 'Missing leaveId' }, 400);
+  const actor = by || 'manager';
+
+  const updated = await sql`
+    UPDATE leaves
+    SET status = ${decision},
+        decided_by = ${actor},
+        decided_at = NOW(),
+        updated_at = NOW()
+    WHERE id = ${leaveId}
+    RETURNING id
+  `;
+  if (!updated.length) return json({ error: 'Leave not found' }, 404);
+
+  await sql`
+    INSERT INTO approval_log (leave_id, action, by_user)
+    VALUES (${leaveId}, ${decision}, ${actor})
+  `;
+  return respondWithEmployees();
+}
+
+async function handleCancel(body) {
+  const { leaveId } = body;
+  if (!leaveId) return json({ error: 'Missing leaveId' }, 400);
+  const result = await sql`DELETE FROM leaves WHERE id = ${leaveId} RETURNING id`;
+  if (!result.length) return json({ error: 'Leave not found' }, 404);
+  return respondWithEmployees();
+}
+
+async function handleReset() {
+  await sql`TRUNCATE approval_log, leaves, employees RESTART IDENTITY CASCADE`;
+  await seedFromList(SEED_EMPLOYEES);
+  return respondWithEmployees({ reset: true });
+}
+
 export default async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204 });
   }
 
-  const store = getStore(BLOB_STORE);
+  try {
+    await bootstrap();
+  } catch (err) {
+    return json({ error: 'Database initialization failed', detail: String(err.message || err) }, 500);
+  }
 
   if (req.method === 'GET') {
-    let data = await store.get(KEY, { type: 'json' });
-    if (!data) {
-      data = JSON.parse(JSON.stringify(SEED));
-      await store.setJSON(KEY, data);
+    try {
+      return await respondWithEmployees();
+    } catch (err) {
+      return json({ error: 'Read failed', detail: String(err.message || err) }, 500);
     }
-    return json({ employees: data });
   }
 
   if (req.method === 'POST') {
-    let data = await store.get(KEY, { type: 'json' });
-    if (!data) data = JSON.parse(JSON.stringify(SEED));
-
     let body;
     try { body = await req.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-    switch (body.action) {
-      case 'submit': {
-        const emp = data.find(e => e.name === body.employee);
-        if (emp) emp.leaves.push(body.leave);
-        break;
+    try {
+      switch (body.action) {
+        case 'submit':  return await handleSubmit(body);
+        case 'approve': return await handleDecision(body, 'approved');
+        case 'reject':  return await handleDecision(body, 'rejected');
+        case 'cancel':  return await handleCancel(body);
+        case 'reset':   return await handleReset();
+        default:        return json({ error: 'Unknown action' }, 400);
       }
-      case 'approve': {
-        const emp = data.find(e => e.name === body.employee);
-        if (emp && emp.leaves[body.index]) {
-          if (!emp.leaves[body.index].approvalLog) emp.leaves[body.index].approvalLog = [];
-          emp.leaves[body.index].approvalLog.push({
-            action: 'approved',
-            by: body.approver || 'manager',
-            at: new Date().toISOString(),
-          });
-          emp.leaves[body.index].status = 'approved';
-          emp.leaves[body.index].approvedBy = body.approver;
-          emp.leaves[body.index].approvedAt = new Date().toISOString();
-        }
-        break;
-      }
-      case 'reject': {
-        const emp = data.find(e => e.name === body.employee);
-        if (emp && emp.leaves[body.index]) {
-          if (!emp.leaves[body.index].approvalLog) emp.leaves[body.index].approvalLog = [];
-          emp.leaves[body.index].approvalLog.push({
-            action: 'rejected',
-            by: body.rejecter || 'manager',
-            at: new Date().toISOString(),
-          });
-          emp.leaves[body.index].status = 'rejected';
-          emp.leaves[body.index].rejectedBy = body.rejecter;
-          emp.leaves[body.index].rejectedAt = new Date().toISOString();
-        }
-        break;
-      }
-      case 'cancel': {
-        const emp = data.find(e => e.name === body.employee);
-        if (emp) emp.leaves.splice(body.index, 1);
-        break;
-      }
-      case 'reset': {
-        data = JSON.parse(JSON.stringify(SEED));
-        break;
-      }
-      default:
-        return json({ error: 'Unknown action' }, 400);
+    } catch (err) {
+      return json({ error: 'Mutation failed', detail: String(err.message || err) }, 500);
     }
-
-    await store.setJSON(KEY, data);
-    return json({ ok: true, employees: data });
   }
 
   return json({ error: 'Method not allowed' }, 405);

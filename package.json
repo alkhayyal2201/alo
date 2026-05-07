@@ -2,6 +2,7 @@
   "name": "alo-leave-management",
   "private": true,
   "dependencies": {
-    "@netlify/blobs": "^7.2.0"
+    "@netlify/blobs": "^7.2.0",
+    "@netlify/neon": "^0.1.2"
   }
 }

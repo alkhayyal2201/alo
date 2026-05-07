@@ -20,59 +20,7 @@ const blockouts = [
   { month: 10, label: '20 Nov - 30 Nov', startDate: '2026-11-20', endDate: '2026-11-30' },
 ];
 
-const SEED_EMPLOYEES = [
-  { name: 'Amen', leaves: [] },
-  { name: 'Ousama', leaves: [
-    { month: 5, status: 'pending', dates: '20 - 30 Jun', days: 11, startDate: '2026-06-20', endDate: '2026-06-30', approvalLog: [] },
-    { month: 6, status: 'pending', dates: '1 - 24 Jul',  days: 24, startDate: '2026-07-01', endDate: '2026-07-24', approvalLog: [] },
-  ]},
-  { name: 'Ali', leaves: [] },
-  { name: 'Hardeep', leaves: [
-    { month: 9, status: 'pending', dates: '1 - 31 Oct', days: 31, startDate: '2026-10-01', endDate: '2026-10-31', approvalLog: [] },
-  ]},
-  { name: 'Ariel', leaves: [
-    { month: 5, status: 'pending', dates: '30 Jun',     days: 1,  startDate: '2026-06-30', endDate: '2026-06-30', approvalLog: [] },
-    { month: 6, status: 'pending', dates: '1 - 31 Jul', days: 31, startDate: '2026-07-01', endDate: '2026-07-31', approvalLog: [] },
-  ]},
-  { name: 'Jojo', leaves: [] },
-  { name: 'Maryam', leaves: [
-    { month: 1,  status: 'pending', dates: '6 - 15 Feb',  days: 10, startDate: '2026-02-06', endDate: '2026-02-15', approvalLog: [] },
-    { month: 6,  status: 'pending', dates: '5 - 8 Jul',   days: 4,  startDate: '2026-07-05', endDate: '2026-07-08', approvalLog: [] },
-    { month: 9,  status: 'pending', dates: '29 - 31 Oct', days: 3,  startDate: '2026-10-29', endDate: '2026-10-31', approvalLog: [] },
-    { month: 10, status: 'pending', dates: '1 - 5 Nov',   days: 5,  startDate: '2026-11-01', endDate: '2026-11-05', approvalLog: [] },
-  ]},
-  { name: 'Brenda', leaves: [
-    { month: 0,  status: 'pending', dates: '23 - 24 Jan', days: 2,  startDate: '2026-01-23', endDate: '2026-01-24', approvalLog: [] },
-    { month: 4,  status: 'pending', dates: '1 - 14 May',  days: 14, startDate: '2026-05-01', endDate: '2026-05-14', approvalLog: [] },
-    { month: 8,  status: 'pending', dates: '15 - 28 Sep', days: 14, startDate: '2026-09-15', endDate: '2026-09-28', approvalLog: [] },
-    { month: 11, status: 'pending', dates: '1 - 28 Dec',  days: 28, startDate: '2026-12-01', endDate: '2026-12-28', approvalLog: [] },
-  ]},
-  { name: 'Rhea', leaves: [
-    { month: 4, status: 'pending', dates: '8 - 18 May',  days: 11, startDate: '2026-05-08', endDate: '2026-05-18', approvalLog: [] },
-    { month: 7, status: 'pending', dates: '15 - 30 Aug', days: 16, startDate: '2026-08-15', endDate: '2026-08-30', approvalLog: [] },
-  ]},
-  { name: 'Najwa', leaves: [] },
-  { name: 'Roaa', leaves: [
-    { month: 0, status: 'pending', dates: '26 - 31 Jan', days: 6, startDate: '2026-01-26', endDate: '2026-01-31', approvalLog: [] },
-    { month: 1, status: 'pending', dates: '1 - 4 Feb',   days: 4, startDate: '2026-02-01', endDate: '2026-02-04', approvalLog: [] },
-  ]},
-  { name: 'Mochi', leaves: [
-    { month: 0, status: 'pending', dates: '24 - 31 Jan', days: 8,  startDate: '2026-01-24', endDate: '2026-01-31', approvalLog: [] },
-    { month: 1, status: 'pending', dates: '1 - 4 Feb',   days: 4,  startDate: '2026-02-01', endDate: '2026-02-04', approvalLog: [] },
-    { month: 2, status: 'pending', dates: '29 - 31 Mar', days: 3,  startDate: '2026-03-29', endDate: '2026-03-31', approvalLog: [] },
-    { month: 3, status: 'pending', dates: '1 - 11 Apr',  days: 11, startDate: '2026-04-01', endDate: '2026-04-11', approvalLog: [] },
-    { month: 9, status: 'pending', dates: '1 - 15 Oct',  days: 15, startDate: '2026-10-01', endDate: '2026-10-15', approvalLog: [] },
-  ]},
-  { name: 'Arth', leaves: [
-    { month: 6, status: 'pending', dates: '1 - 31 Jul', days: 31, startDate: '2026-07-01', endDate: '2026-07-31', approvalLog: [] },
-  ]},
-  { name: 'Isa', leaves: [
-    { month: 5,  status: 'pending', dates: '18 - 29 Jun', days: 12, startDate: '2026-06-18', endDate: '2026-06-29', approvalLog: [] },
-    { month: 11, status: 'pending', dates: '12 - 31 Dec', days: 20, startDate: '2026-12-12', endDate: '2026-12-31', approvalLog: [] },
-  ]},
-];
-
-const LOCAL_KEY = 'alo_leave_store';
+const LOCAL_CACHE_KEY = 'alo_leave_cache';
 const API_URL = '/api/leaves';
 
 let store = { employees: [] };
@@ -103,139 +51,65 @@ function setLoading(on) {
 function isManager() { return currentUser !== null; }
 
 // ============================================================
-// API layer
+// API layer — server is the source of truth.
 // ============================================================
-async function apiGet() {
-  try {
-    const r = await fetch(API_URL, { credentials: 'same-origin' });
-    if (r.ok) return await r.json();
-  } catch (_) {}
-  return null;
+async function apiFetch(method, body) {
+  const opts = { method, credentials: 'same-origin' };
+  if (body !== undefined) {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(API_URL, opts);
+  const data = await r.json().catch(() => null);
+  if (!r.ok) {
+    const msg = (data && data.error) || `Request failed (${r.status})`;
+    throw new Error(msg);
+  }
+  return data;
 }
 
-async function apiPost(payload) {
+function loadCache() {
   try {
-    const r = await fetch(API_URL, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (r.ok) return await r.json();
-  } catch (_) {}
-  return null;
-}
-
-// ============================================================
-// Persistence
-// ============================================================
-function loadLocal() {
-  try {
-    const raw = localStorage.getItem(LOCAL_KEY);
+    const raw = localStorage.getItem(LOCAL_CACHE_KEY);
     if (raw) return JSON.parse(raw);
   } catch (_) {}
   return null;
 }
 
-function saveLocal() {
-  store._ts = Date.now();
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(store));
+function saveCache() {
+  try {
+    localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(store));
+  } catch (_) {}
+}
+
+function adoptRemote(employees) {
+  store = { employees };
+  saveCache();
 }
 
 async function loadData() {
-  const local = loadLocal();
-  if (local && local.employees && local.employees.length) {
-    store = local;
-    migrateLeaves();
-  }
+  const cache = loadCache();
+  if (cache && cache.employees && cache.employees.length) store = cache;
 
-  const remote = await apiGet();
-  if (remote && remote.employees && remote.employees.length) {
-    store = { employees: remote.employees };
-    migrateLeaves();
-    saveLocal();
-  } else if (!store.employees || !store.employees.length) {
-    store = { employees: JSON.parse(JSON.stringify(SEED_EMPLOYEES)) };
-    saveLocal();
+  try {
+    const remote = await apiFetch('GET');
+    if (remote && remote.employees) adoptRemote(remote.employees);
+  } catch (err) {
+    if (!store.employees || !store.employees.length) {
+      console.error('Initial load failed and no cache available:', err);
+    }
   }
 }
 
-function migrateLeaves() {
-  let dirty = false;
-  store.employees.forEach(emp => {
-    emp.leaves.forEach(leave => {
-      if (leave.startDate && leave.endDate) return;
-      const nums = (leave.dates || '').match(/\d+/g);
-      if (nums && leave.month != null) {
-        const y = leave.startDate ? new Date(leave.startDate + 'T00:00:00').getFullYear() : SEED_YEAR;
-        if (!leave.startDate) leave.startDate = isoDate(y, leave.month, parseInt(nums[0]));
-        if (!leave.endDate) leave.endDate = isoDate(y, leave.month, parseInt(nums[nums.length - 1]));
-        dirty = true;
-      }
-    });
-  });
-  if (dirty) saveLocal();
-}
-
-async function mutate(action, extra) {
-  applyLocalMutation(action, extra);
-  saveLocal();
-  render();
-
-  const remote = await apiPost({ action, ...extra });
-  if (remote && remote.employees) {
-    store = { employees: remote.employees };
-    saveLocal();
-    render();
-  }
-}
-
-function applyLocalMutation(action, extra) {
-  switch (action) {
-    case 'submit': {
-      const emp = store.employees.find(e => e.name === extra.employee);
-      if (emp) emp.leaves.push(extra.leave);
-      break;
+async function mutate(payload) {
+  try {
+    const remote = await apiFetch('POST', payload);
+    if (remote && remote.employees) {
+      adoptRemote(remote.employees);
+      render();
     }
-    case 'approve': {
-      const emp = store.employees.find(e => e.name === extra.employee);
-      if (emp && emp.leaves[extra.index]) {
-        if (!emp.leaves[extra.index].approvalLog) emp.leaves[extra.index].approvalLog = [];
-        emp.leaves[extra.index].approvalLog.push({
-          action: 'approved',
-          by: currentUser || 'manager',
-          at: new Date().toISOString(),
-        });
-        emp.leaves[extra.index].status = 'approved';
-        emp.leaves[extra.index].approvedBy = currentUser || 'manager';
-        emp.leaves[extra.index].approvedAt = new Date().toISOString();
-      }
-      break;
-    }
-    case 'reject': {
-      const emp = store.employees.find(e => e.name === extra.employee);
-      if (emp && emp.leaves[extra.index]) {
-        if (!emp.leaves[extra.index].approvalLog) emp.leaves[extra.index].approvalLog = [];
-        emp.leaves[extra.index].approvalLog.push({
-          action: 'rejected',
-          by: currentUser || 'manager',
-          at: new Date().toISOString(),
-        });
-        emp.leaves[extra.index].status = 'rejected';
-        emp.leaves[extra.index].rejectedBy = currentUser || 'manager';
-        emp.leaves[extra.index].rejectedAt = new Date().toISOString();
-      }
-      break;
-    }
-    case 'cancel': {
-      const emp = store.employees.find(e => e.name === extra.employee);
-      if (emp) emp.leaves.splice(extra.index, 1);
-      break;
-    }
-    case 'reset': {
-      store = { employees: JSON.parse(JSON.stringify(SEED_EMPLOYEES)) };
-      break;
-    }
+  } catch (err) {
+    alert(err.message || 'Could not save changes. Please try again.');
   }
 }
 
@@ -540,7 +414,6 @@ function renderMyLeaves() {
     .slice()
     .sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''))
     .map((l) => {
-      const origI = me.leaves.indexOf(l);
       const leaveYear = l.startDate ? new Date(l.startDate + 'T00:00:00').getFullYear() : SEED_YEAR;
       return `<div class="leave-card card-${l.status}">
         <div class="leave-card-row">
@@ -549,13 +422,13 @@ function renderMyLeaves() {
         </div>
         <div class="leave-card-dates">${l.dates} &middot; ${l.days} day${l.days !== 1 ? 's' : ''}</div>
         ${l.notes ? `<div class="leave-card-notes">${l.notes}</div>` : ''}
-        ${l.status === 'pending' ? `<button class="btn-sm btn-danger cancel-leave" data-emp="${me.name}" data-idx="${origI}" style="margin-top:10px;">Cancel Request</button>` : ''}
+        ${l.status === 'pending' ? `<button class="btn-sm btn-danger cancel-leave" data-leave-id="${l.id}" style="margin-top:10px;">Cancel Request</button>` : ''}
       </div>`;
     }).join('');
 
   el.querySelectorAll('.cancel-leave').forEach(btn => {
     btn.addEventListener('click', async () => {
-      await mutate('cancel', { employee: btn.dataset.emp, index: parseInt(btn.dataset.idx, 10) });
+      await mutate({ action: 'cancel', leaveId: parseInt(btn.dataset.leaveId, 10) });
     });
   });
 }
@@ -580,6 +453,7 @@ function renderApprovals() {
   el.innerHTML =
     `<div class="approval-count">${pending.length} pending request${pending.length !== 1 ? 's' : ''}</div>` +
     pending.map(r => {
+      const leaveId = r.leave.id;
       const leaveYear = r.leave.startDate ? new Date(r.leave.startDate + 'T00:00:00').getFullYear() : SEED_YEAR;
       const logHtml = (r.leave.approvalLog && r.leave.approvalLog.length)
         ? r.leave.approvalLog.slice().reverse().map(e => {
@@ -601,10 +475,10 @@ function renderApprovals() {
         ${r.leave.notes ? `<div class="approval-notes">\u201C${r.leave.notes}\u201D</div>` : ''}
         ${logHtml ? `<div class="approval-log">${logHtml}</div>` : ''}
         <div class="approval-actions">
-          <button class="btn-sm btn-approve approve-btn" data-emp="${r.emp.name}" data-idx="${r.idx}">
+          <button class="btn-sm btn-approve approve-btn" data-leave-id="${leaveId}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Approve
           </button>
-          <button class="btn-sm btn-reject reject-btn" data-emp="${r.emp.name}" data-idx="${r.idx}">
+          <button class="btn-sm btn-reject reject-btn" data-leave-id="${leaveId}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Reject
           </button>
         </div>
@@ -613,17 +487,19 @@ function renderApprovals() {
 
   el.querySelectorAll('.approve-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      await mutate('approve', {
-        employee: btn.dataset.emp,
-        index: parseInt(btn.dataset.idx, 10),
+      await mutate({
+        action: 'approve',
+        leaveId: parseInt(btn.dataset.leaveId, 10),
+        by: currentUser || 'manager',
       });
     });
   });
   el.querySelectorAll('.reject-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      await mutate('reject', {
-        employee: btn.dataset.emp,
-        index: parseInt(btn.dataset.idx, 10),
+      await mutate({
+        action: 'reject',
+        leaveId: parseInt(btn.dataset.leaveId, 10),
+        by: currentUser || 'manager',
       });
     });
   });
@@ -683,24 +559,16 @@ document.getElementById('leave-submit').addEventListener('click', async () => {
   const end   = document.getElementById('leave-end').value;
   const notes = document.getElementById('leave-notes').value;
   if (!start || !end) { alert('Please pick start and end dates.'); return; }
-  const startD = new Date(start + 'T00:00:00');
-  const endD   = new Date(end + 'T00:00:00');
-  if (endD < startD) { alert('End date must be on or after start date.'); return; }
-  const days = Math.round((endD - startD) / 86400000) + 1;
-  const fmt  = d => `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
-  const dates = startD.getTime() === endD.getTime() ? fmt(startD) : `${fmt(startD)} - ${fmt(endD)}`;
-  const leaveObj = {
-    month: modalMonth,
-    status: 'pending',
-    dates,
-    days,
-    startDate: start,
-    endDate: end,
-    notes: notes || undefined,
-    approvalLog: [],
-  };
+  if (new Date(end + 'T00:00:00') < new Date(start + 'T00:00:00')) {
+    alert('End date must be on or after start date.');
+    return;
+  }
   closeLeaveModal();
-  await mutate('submit', { employee: empName, leave: leaveObj });
+  await mutate({
+    action: 'submit',
+    employee: empName,
+    leave: { startDate: start, endDate: end, notes: notes || undefined },
+  });
 });
 
 // ============================================================
@@ -760,8 +628,6 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 // ============================================================
 // Init
 // ============================================================
-window.addEventListener('beforeunload', () => saveLocal());
-
 (async () => {
   setLoading(true);
   await loadData();
@@ -777,13 +643,13 @@ window.addEventListener('beforeunload', () => saveLocal());
   render();
 
   syncHandle = setInterval(async () => {
-    const before = dataSignature();
-    const remote = await apiGet();
-    if (remote && remote.employees) {
-      store = { employees: remote.employees };
-      migrateLeaves();
-      saveLocal();
-      if (dataSignature() !== before) render();
-    }
+    try {
+      const before = dataSignature();
+      const remote = await apiFetch('GET');
+      if (remote && remote.employees) {
+        adoptRemote(remote.employees);
+        if (dataSignature() !== before) render();
+      }
+    } catch (_) {}
   }, 30000);
 })();
